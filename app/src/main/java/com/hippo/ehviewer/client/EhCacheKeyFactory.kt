@@ -17,16 +17,8 @@ package com.hippo.ehviewer.client
 
 import com.hippo.ehviewer.client.data.AbstractGalleryInfo
 
-// E-Hentai Large Preview (v1 Cover): https://ehgt.moonchan.xyz/**.jpg
-// ExHentai Large Preview (v1 Cover): https://ehgt.moonchan.xyz/**.jpg
-// E-Hentai v2 Cover: https://ehgt.moonchan.xyz/w/**.webp
-// ExHentai v2 Cover: https://ehgt.moonchan.xyz/w/**.webp
-// Normal Preview (v1 v2): https://*.hath.network/c(m|1|2)/[timed token]/[gid]-[index].(jpg|webp)
-// Large Preview (v2): https://*.hath.network/[timed token]/**.webp
-const val URL_PREFIX_THUMB_E = "https://ehgt.moonchan.xyz/"
-const val URL_PREFIX_THUMB_EX = "https://ehgt.moonchan.xyz/"
-private const val URL_PREFIX_V1_THUMB_EX = URL_PREFIX_THUMB_EX + "t/"
-private const val URL_PREFIX_V1_THUMB_EX_OLD = "https://e.810114.xyz/t/"
+const val THUMB_PROXY = "https://proxy.moonchan.xyz/"
+
 private val NormalPreviewKeyRegex = Regex("/(c[12m])/[^/]+/(\\d+-\\d+)")
 
 fun getImageKey(gid: Long, index: Int) = "image:$gid:$index"
@@ -41,20 +33,20 @@ val String.isNormalPreviewKey
     get() = startsWith("preview:normal:")
 
 val String.thumbUrl
-    get() = removePrefix(URL_PREFIX_THUMB_E)
-        .removePrefix(URL_PREFIX_V1_THUMB_EX_OLD)
-        .removePrefix(URL_PREFIX_V1_THUMB_EX)
-        .removePrefix(URL_PREFIX_THUMB_EX).let {
-            if (it.startsWith("https:")) {
-                it
-            } else {
-                if (EhUtils.isExHentai) {
-                    if (it.endsWith("webp")) URL_PREFIX_THUMB_EX else URL_PREFIX_V1_THUMB_EX
-                } else {
-                    URL_PREFIX_THUMB_E
-                } + it
+    get() {
+        val url = this
+        if (url.startsWith("http://") || url.startsWith("https://")) {
+            val afterProto = url.substringAfter("://")
+            var host = afterProto.substringBefore("/")
+            val path = afterProto.substringAfter("/", "")
+            // s.exhentai.org not available on proxy — use ehgt.org
+            if (host == "s.exhentai.org") {
+                host = "ehgt.org"
             }
+            return "${THUMB_PROXY}${path}?proxy_host=${host}"
         }
+        return THUMB_PROXY + url.trimStart('/')
+    }
 
 val AbstractGalleryInfo.thumbUrl
     get() = thumb?.thumbUrl
