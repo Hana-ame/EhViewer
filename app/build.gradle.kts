@@ -1,7 +1,9 @@
 import java.io.ByteArrayOutputStream
+import java.io.FileInputStream
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -30,11 +32,18 @@ android {
         }
     }
 
+    val keystoreProps = Properties().apply {
+        val propsFile = File(rootDir, "keystore.properties")
+        if (propsFile.exists()) {
+            load(FileInputStream(propsFile))
+        }
+    }
+
     val signConfig = signingConfigs.create("release") {
         storeFile = File(projectDir.path + "/keystore/androidkey.jks")
-        storePassword = "000000"
-        keyAlias = "key0"
-        keyPassword = "000000"
+        storePassword = System.getenv("KEYSTORE_PASSWORD") ?: keystoreProps.getProperty("storePassword")
+        keyAlias = System.getenv("KEY_ALIAS") ?: keystoreProps.getProperty("keyAlias")
+        keyPassword = System.getenv("KEY_PASSWORD") ?: keystoreProps.getProperty("keyPassword")
         enableV3Signing = true
         enableV4Signing = true
     }

@@ -9,3 +9,7 @@
 release
 google-services.json
 /.kotlin
+# Signing
+keystore.properties
+**/keystore/
+*.jks
