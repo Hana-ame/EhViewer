@@ -32,14 +32,13 @@ fun getNormalPreviewKey(url: String) = NormalPreviewKeyRegex.find(url)?.let { "p
 val String.isNormalPreviewKey
     get() = startsWith("preview:normal:")
 
-val String.thumbUrl
+val String.thumbUrl: String
     get() {
         val url = this
         if (url.startsWith("http://") || url.startsWith("https://")) {
             val afterProto = url.substringAfter("://")
             var host = afterProto.substringBefore("/")
             val path = afterProto.substringAfter("/", "")
-            // s.exhentai.org not available on proxy — use ehgt.org
             if (host == "s.exhentai.org") {
                 host = "ehgt.org"
             }
@@ -48,5 +47,5 @@ val String.thumbUrl
         return THUMB_PROXY + url.trimStart('/')
     }
 
-val AbstractGalleryInfo.thumbUrl
+val AbstractGalleryInfo.thumbUrl: String?
     get() = thumb?.thumbUrl
