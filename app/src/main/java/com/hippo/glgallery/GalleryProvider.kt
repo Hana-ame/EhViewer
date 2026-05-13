@@ -24,6 +24,7 @@ import com.hippo.glview.image.ImageWrapper
 import com.hippo.glview.view.GLRoot
 import com.hippo.glview.view.GLRoot.OnGLIdleListener
 import com.hippo.image.Image
+import com.hippo.util.isAtLeastO
 import com.hippo.yorozuya.ConcurrentPool
 import com.hippo.yorozuya.MathUtils
 import com.hippo.yorozuya.OSUtils
@@ -31,7 +32,11 @@ import com.hippo.yorozuya.OSUtils
 abstract class GalleryProvider {
     private val mNotifyTaskPool = ConcurrentPool<NotifyTask>(5)
     private val mImageCache = lruCache<Int, ImageWrapper>(
-        maxSize = (OSUtils.getTotalMemory() / 12).toInt().coerceIn(MIN_CACHE_SIZE, MAX_CACHE_SIZE),
+        maxSize = if (isAtLeastO) {
+            (OSUtils.getTotalMemory() / 12).toInt().coerceIn(MIN_CACHE_SIZE, MAX_CACHE_SIZE)
+        } else {
+            (OSUtils.getAppMaxMemory() / 3 * 2).toInt()
+        },
         sizeOf = { _, v -> v.width * v.height * if (v.animated) 20 else 4 },
         onEntryRemoved = { _, _, o, _ -> o.release() },
     )
@@ -72,8 +77,8 @@ abstract class GalleryProvider {
         } else {
             index - 1 downTo (index - mPreloads).coerceAtLeast(0)
         }
-        var start = if (preloadRange.step > 0) preloadRange.first else preloadRange.last
-        var end = if (preloadRange.step > 0) preloadRange.last else preloadRange.first
+        val start = if (preloadRange.step > 0) preloadRange.first else preloadRange.last
+        val end = if (preloadRange.step > 0) preloadRange.last else preloadRange.first
         preloadPages(
             preloadRange.filter { mImageCache[it] == null },
             start - 8 to end + 8,
@@ -186,7 +191,6 @@ abstract class GalleryProvider {
                 } else {
                     mListener.onDataChanged(mIndex)
                 }
-
                 TYPE_WAIT -> mListener.onPageWait(mIndex)
                 TYPE_PERCENT -> mListener.onPagePercent(mIndex, mPercent)
                 TYPE_SUCCEED -> mListener.onPageSucceed(mIndex, mImage)

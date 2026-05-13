@@ -17,6 +17,7 @@ package com.hippo.util
 
 import com.hippo.ehviewer.GetText.getString
 import com.hippo.ehviewer.R
+import com.hippo.ehviewer.client.exception.CloudflareBypassException
 import com.hippo.ehviewer.client.exception.EhException
 import com.hippo.network.StatusCodeException
 import java.net.MalformedURLException
@@ -29,27 +30,41 @@ import javax.net.ssl.SSLException
 object ExceptionUtils {
     fun getReadableString(e: Throwable?): String {
         e?.printStackTrace()
-        return if (e is MalformedURLException) {
-            getString(R.string.error_invalid_url)
-        } else if (e is SocketTimeoutException) {
-            getString(R.string.error_timeout)
-        } else if (e is UnknownHostException) {
-            getString(R.string.error_unknown_host)
-        } else if (e is StatusCodeException) {
-            val sb = StringBuilder()
-            sb.append(getString(R.string.error_bad_status_code, e.responseCode))
-            if (e.isIdentifiedResponseCode) {
-                sb.append(", ").append(e.message)
+
+        if (e?.cause is CloudflareBypassException) {
+            return e.cause!!.message!!
+        }
+
+        return when (e) {
+            is MalformedURLException -> {
+                getString(R.string.error_invalid_url)
             }
-            sb.toString()
-        } else if (e is ProtocolException && e.message!!.startsWith("Too many follow-up requests:")) {
-            getString(R.string.error_redirection)
-        } else if (e is ProtocolException || e is SocketException || e is SSLException) {
-            getString(R.string.error_socket)
-        } else if (e is EhException) {
-            e.message!!
-        } else {
-            getString(R.string.error_unknown)
+            is SocketTimeoutException -> {
+                getString(R.string.error_timeout)
+            }
+            is UnknownHostException -> {
+                getString(R.string.error_unknown_host)
+            }
+            is StatusCodeException -> {
+                val sb = StringBuilder()
+                sb.append(getString(R.string.error_bad_status_code, e.responseCode))
+                if (e.isIdentifiedResponseCode) {
+                    sb.append(", ").append(e.message)
+                }
+                sb.toString()
+            }
+            is ProtocolException if e.message!!.startsWith("Too many follow-up requests:") -> {
+                getString(R.string.error_redirection)
+            }
+            is ProtocolException, is SocketException, is SSLException -> {
+                getString(R.string.error_socket)
+            }
+            is EhException -> {
+                e.message!!
+            }
+            else -> {
+                getString(R.string.error_unknown)
+            }
         }
     }
 
@@ -59,11 +74,9 @@ object ExceptionUtils {
             is VirtualMachineError -> {
                 throw t
             }
-
             is ThreadDeath -> {
                 throw t
             }
-
             is LinkageError -> {
                 throw t
             }

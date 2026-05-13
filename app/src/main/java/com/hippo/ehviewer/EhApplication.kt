@@ -18,7 +18,6 @@ package com.hippo.ehviewer
 import android.app.Activity
 import android.content.Context
 import android.os.StrictMode
-import android.text.Html
 import android.text.method.LinkMovementMethod
 import android.view.View
 import android.widget.TextView
@@ -29,8 +28,10 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.gif.AnimatedImageDecoder
+import coil3.gif.GifDecoder
 import coil3.network.ConnectivityChecker
 import coil3.network.NetworkFetcher
+import coil3.network.okhttp.asNetworkClient
 import coil3.request.crossfade
 import coil3.serviceLoaderEnabled
 import coil3.util.DebugLogger
@@ -40,20 +41,25 @@ import com.hippo.ehviewer.client.EhTagDatabase
 import com.hippo.ehviewer.client.data.GalleryDetail
 import com.hippo.ehviewer.coil.DownloadThumbInterceptor
 import com.hippo.ehviewer.coil.MergeInterceptor
-import com.hippo.ehviewer.coil.limitConcurrency
 import com.hippo.ehviewer.dao.buildMainDB
 import com.hippo.ehviewer.download.DownloadManager
 import com.hippo.ehviewer.ui.EhActivity
 import com.hippo.ehviewer.ui.keepNoMediaFileStatus
+import com.hippo.ehviewer.widget.SearchDatabase
 import com.hippo.scene.SceneApplication
 import com.hippo.util.ReadableTime
+import com.hippo.util.isAtLeastP
 import com.hippo.util.launchIO
+import com.hippo.util.loadHtml
 import com.hippo.yorozuya.FileUtils
 import com.hippo.yorozuya.IntIdGenerator
 import eu.kanade.tachiyomi.network.interceptor.CloudflareInterceptor
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import kotlinx.coroutines.DelicateCoroutinesApi
 import okhttp3.Cache
 import okhttp3.OkHttpClient
+import okhttp3.tls.HandshakeCertificates
 import okio.FileSystem
 import okio.Path.Companion.toOkioPath
 
@@ -150,7 +156,7 @@ class EhApplication :
         val activity = topActivity
         activity?.runOnUiThread {
             val dialog = AlertDialog.Builder(activity)
-                .setMessage(Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY))
+                .setMessage(loadHtml(html))
                 .setPositiveButton(android.R.string.ok, null)
                 .create()
             dialog.setOnShowListener {
@@ -204,10 +210,19 @@ class EhApplication :
     override fun newImageLoader(context: Context) = ImageLoader.Builder(context).apply {
         serviceLoaderEnabled(false)
         components {
-            add(NetworkFetcher.Factory({ nonCacheOkHttpClient.limitConcurrency() }) { ConnectivityChecker.ONLINE })
+            if (isAtLeastP) {
+                add(AnimatedImageDecoder.Factory(false))
+            } else {
+                add(GifDecoder.Factory())
+            }
+            add(
+                NetworkFetcher.Factory(
+                    networkClient = { coilOkHttpClient.asNetworkClient() },
+                    connectivityChecker = { ConnectivityChecker.ONLINE },
+                ),
+            )
             add(MergeInterceptor)
             add(DownloadThumbInterceptor)
-            add(AnimatedImageDecoder.Factory(false))
         }
         crossfade(300)
         diskCache(thumbCache)
@@ -225,9 +240,18 @@ class EhApplication :
         val ehProxySelector by lazy { EhProxySelector() }
 
         val nonCacheOkHttpClient by lazy {
+            val cf = CertificateFactory.getInstance("X.509")
+            val cert = application.resources.openRawResource(R.raw.isrgrootx1).use {
+                cf.generateCertificates(it).first() as X509Certificate
+            }
+            val certs = HandshakeCertificates.Builder()
+                .addPlatformTrustedCertificates()
+                .addTrustedCertificate(cert)
+                .build()
             OkHttpClient.Builder().apply {
                 cookieJar(EhCookieStore)
                 proxySelector(ehProxySelector)
+                sslSocketFactory(certs.sslSocketFactory(), certs.trustManager)
                 addInterceptor(CloudflareInterceptor(application))
             }.build()
         }
@@ -235,6 +259,18 @@ class EhApplication :
         val noRedirectOkHttpClient by lazy {
             nonCacheOkHttpClient.newBuilder()
                 .followRedirects(false)
+                .build()
+        }
+
+        val coilOkHttpClient by lazy {
+            nonCacheOkHttpClient.newBuilder()
+                .addInterceptor { chain ->
+                    val request = chain.request()
+                    val newRequest = request.newBuilder()
+                        .header("User-Agent", Settings.userAgent!!)
+                        .build()
+                    chain.proceed(newRequest)
+                }
                 .build()
         }
 
@@ -256,6 +292,8 @@ class EhApplication :
         val favouriteStatusRouter by lazy { FavouriteStatusRouter() }
 
         val ehDatabase by lazy { buildMainDB(application) }
+
+        val searchDatabase by lazy { SearchDatabase.getInstance(application)!! }
 
         val thumbCache by lazy {
             DiskCache.Builder()

@@ -17,8 +17,8 @@ package com.hippo.widget
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.TypedArray
 import android.util.AttributeSet
+import androidx.core.content.withStyledAttributes
 import com.google.android.material.imageview.ShapeableImageView
 import com.hippo.ehviewer.R
 import com.hippo.yorozuya.MathUtils
@@ -47,23 +47,23 @@ open class FixedAspectImageView @JvmOverloads constructor(
     @SuppressLint("ResourceType")
     private fun init(context: Context, attrs: AttributeSet?, defStyle: Int) {
         // Make sure we get value from xml
-        var a: TypedArray = context.obtainStyledAttributes(attrs, MIN_ATTRS, defStyle, 0)
-        setMinimumWidth(a.getDimensionPixelSize(0, 0))
-        setMinimumHeight(a.getDimensionPixelSize(1, 0))
-        a.recycle()
-        a = context.obtainStyledAttributes(attrs, ATTRS, defStyle, 0)
-        setAdjustViewBounds(a.getBoolean(0, false))
-        setMaxWidth(a.getDimensionPixelSize(1, Int.MAX_VALUE))
-        setMaxHeight(a.getDimensionPixelSize(2, Int.MAX_VALUE))
-        a.recycle()
-        a = context.obtainStyledAttributes(
+        context.withStyledAttributes(attrs, MIN_ATTRS, defStyle, 0) {
+            setMinimumWidth(getDimensionPixelSize(0, 0))
+            setMinimumHeight(getDimensionPixelSize(1, 0))
+        }
+        context.withStyledAttributes(attrs, ATTRS, defStyle, 0) {
+            setAdjustViewBounds(getBoolean(0, false))
+            setMaxWidth(getDimensionPixelSize(1, Int.MAX_VALUE))
+            setMaxHeight(getDimensionPixelSize(2, Int.MAX_VALUE))
+        }
+        context.withStyledAttributes(
             attrs,
             R.styleable.FixedAspectImageView,
             defStyle,
             0,
-        )
-        aspect = a.getFloat(R.styleable.FixedAspectImageView_aspect, -1f)
-        a.recycle()
+        ) {
+            aspect = getFloat(R.styleable.FixedAspectImageView_aspect, -1f)
+        }
     }
 
     override fun setMinimumWidth(minWidth: Int) {
@@ -91,16 +91,15 @@ open class FixedAspectImageView @JvmOverloads constructor(
         mAdjustViewBounds = adjustViewBounds
     }
 
+    /**
+     * Enable aspect will set AdjustViewBounds true.
+     * Any negative float to disable it,
+     * disable Aspect will not disable AdjustViewBounds.
+     *
+     * @param aspect width/height
+     */
     var aspect: Float
         get() = mAspect
-
-        /**
-         * Enable aspect will set AdjustViewBounds true.
-         * Any negative float to disable it,
-         * disable Aspect will not disable AdjustViewBounds.
-         *
-         * @param aspect width/height
-         */
         set(aspect) {
             mAspect = if (aspect > 0) {
                 aspect
@@ -124,7 +123,6 @@ open class FixedAspectImageView @JvmOverloads constructor(
                 // Parent says we can be as big as we want. Just don't be smaller
                 // than min size, and don't be larger than max size.
                 result = MathUtils.clamp(desiredSize, minSize, maxSize)
-
             MeasureSpec.AT_MOST ->
                 // Parent says we can be as big as we want, up to specSize.
                 // Don't be larger than specSize, and don't be smaller
@@ -133,7 +131,6 @@ open class FixedAspectImageView @JvmOverloads constructor(
                     MathUtils.clamp(desiredSize, minSize, maxSize).toDouble(),
                     specSize.toDouble(),
                 ).toInt()
-
             MeasureSpec.EXACTLY ->
                 // No choice. Do what we are told.
                 result = specSize
@@ -149,17 +146,14 @@ open class FixedAspectImageView @JvmOverloads constructor(
                 // Parent says we can be as big as we want. Just don't be smaller
                 // than min size, and don't be larger than max size.
                 size in minSize..maxSize
-
             MeasureSpec.AT_MOST ->
                 // Parent says we can be as big as we want, up to specSize.
                 // Don't be larger than specSize, and don't be smaller
                 // than min size, and don't be larger than max size.
                 size in minSize..specSize && size <= maxSize
-
             MeasureSpec.EXACTLY ->
                 // No choice.
                 size == specSize
-
             else -> // WTF? Return true to make you happy. (´・ω・`)
                 true
         }

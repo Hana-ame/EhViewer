@@ -4,6 +4,11 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+val isRelease: Boolean
+    get() = gradle.startParameter.taskNames.any { it.contains("Release") }
+val supportedAbis = arrayOf("arm64-v8a", "x86_64", "armeabi-v7a")
 
 plugins {
     alias(libs.plugins.android.application)
@@ -14,20 +19,27 @@ plugins {
     alias(libs.plugins.spotless)
 }
 
+@Suppress("UnstableApiUsage")
 android {
-    compileSdk = 35
-    buildToolsVersion = "35.0.0"
-    ndkVersion = "27.2.12479018"
+    androidResources {
+        localeFilters += listOf(
+            "zh",
+            "zh-rCN",
+            "zh-rHK",
+            "zh-rTW",
+            "ja",
+        )
+    }
 
     splits {
         abi {
             isEnable = true
             reset()
-            if (gradle.startParameter.taskNames.any { it.contains("Release") }) {
-                include("arm64-v8a", "x86_64", "armeabi-v7a", "x86")
+            if (isRelease) {
+                include(*supportedAbis)
                 isUniversalApk = true
             } else {
-                include("arm64-v8a", "x86")
+                include("x86_64", "x86")
             }
         }
     }
@@ -49,12 +61,10 @@ android {
     }
 
     val commitSha by lazy {
-        val stdout = ByteArrayOutputStream()
-        exec {
+        val stdout = providers.exec {
             commandLine = "git rev-parse --short=7 HEAD".split(' ')
-            standardOutput = stdout
-        }
-        stdout.toString().trim()
+        }.standardOutput
+        stdout.asText.get().trim()
     }
 
     val buildTime by lazy {
@@ -63,22 +73,17 @@ android {
     }
 
     defaultConfig {
-        applicationId = "org.moedog.ehviewer"
-        minSdk = 28
-        targetSdk = 35
-        versionCode = 180010
-        versionName = "1.8.9"
-        resourceConfigurations.addAll(
-            listOf(
-                "zh",
-                "zh-rCN",
-                "zh-rHK",
-                "zh-rTW",
-                "ja",
-            ),
-        )
+        applicationId = "xyz.moonchan.ehviewer"
+        versionCode = 180014
+        versionName = "1.8.13"
         buildConfigField("String", "VERSION_CODE", "\"${defaultConfig.versionCode}\"")
         buildConfigField("String", "COMMIT_SHA", "\"$commitSha\"")
+        ndk {
+            if (isRelease) {
+                abiFilters.addAll(supportedAbis)
+            }
+            debugSymbolLevel = "FULL"
+        }
     }
 
     externalNativeBuild {
@@ -88,24 +93,9 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
-    }
-
-    kotlinOptions {
-        jvmTarget = "21"
-        freeCompilerArgs = listOf(
-            // https://kotlinlang.org/docs/compiler-reference.html#progressive
-            "-progressive",
-            "-Xwhen-guards",
-
-            "-opt-in=coil3.annotation.ExperimentalCoilApi",
-            "-opt-in=kotlin.contracts.ExperimentalContracts",
-            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-            "-opt-in=kotlinx.coroutines.FlowPreview",
-            "-opt-in=kotlinx.coroutines.InternalCoroutinesApi",
-            "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
-        )
     }
 
     lint {
@@ -153,6 +143,7 @@ dependencies {
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.browser)
     implementation(libs.androidx.collection)
+    implementation(libs.androidx.webkit)
 
     implementation(libs.androidx.core)
 
@@ -177,6 +168,7 @@ dependencies {
     // https://square.github.io/okhttp/changelogs/changelog/
     implementation(platform(libs.okhttp.bom))
     implementation(libs.okhttp.coroutines)
+    implementation(libs.okhttp.tls)
 
     implementation(libs.okio.jvm)
 
@@ -192,6 +184,24 @@ dependencies {
     implementation(libs.kotlinx.serialization.cbor)
     implementation(libs.ktor.utils)
     implementation(libs.jsoup)
+
+    coreLibraryDesugaring(libs.desugar)
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_21
+        progressiveMode = true
+        optIn.addAll(
+            "coil3.annotation.ExperimentalCoilApi",
+            "kotlin.contracts.ExperimentalContracts",
+            "kotlin.time.ExperimentalTime",
+            "kotlinx.coroutines.ExperimentalCoroutinesApi",
+            "kotlinx.coroutines.FlowPreview",
+            "kotlinx.coroutines.InternalCoroutinesApi",
+            "kotlinx.serialization.ExperimentalSerializationApi",
+        )
+    }
 }
 
 configurations.all {

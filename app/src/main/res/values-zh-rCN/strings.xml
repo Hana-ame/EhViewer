@@ -29,13 +29,14 @@
     <string name="error_username_cannot_empty">用户名不可为空</string>
     <string name="error_password_cannot_empty">密码不可为空</string>
     <string name="sign_in_failed">登录失败</string>
-    <string name="sign_in_failed_tip">若持续出错，请尝试“通过网页登录”或“通过 Cookie 登录”。</string>
+    <string name="sign_in_failed_tip">若持续出错，请尝试“通过网页登录”。</string>
+    <string name="sign_in_failed_tip_2">若您确认您的 Cookie 是正确的，也可以选择忽略错误并继续，但可能会导致一些问题。</string>
+    <string name="ignore">忽略</string>
     <string name="get_it">知道了</string>
     <!-- Cookie Sign In Scene -->
     <string name="cookie_explain">Cookie 是存储在浏览器里的一小块数据。如果您不清楚 Cookie 是什么或者怎么获取 Cookie，最好搜索一下。\n\n请输入特定的 Cookie 来登录。</string>
     <string name="from_clipboard">从剪贴板导入</string>
     <string name="text_is_empty">文本为空</string>
-    <string name="wrong_cookie_warning">看起来您输入的 Cookie 是错误的，最好检查一下。</string>
     <string name="from_clipboard_error">未在剪贴板中发现 Cookies。</string>
 
     <!-- Select Site Scene -->
@@ -162,7 +163,7 @@
     <string name="search_sp_err0">页数最小值至多为 1000</string>
     <string name="search_sp_err1">页数最大值至少为 10</string>
     <string name="search_sp_err2">页数范围差至少为 20</string>
-    <string name="search_sp_err3">页数范围比至多为 0.8</string>
+    <string name="search_sp_err3">页数范围比至多为 0.5</string>
     <string name="search_sf">禁用排除项：</string>
     <string name="search_sfl">语言</string>
     <string name="search_sfu">上传者</string>
@@ -387,7 +388,7 @@
     <string name="settings_eh_account_name_tourist">游客模式</string>
     <string name="settings_eh_account_refresh_igneous">刷新 igneous</string>
     <string name="settings_eh_account_sign_out">退出登录</string>
-    <string name="settings_eh_account_sign_out_tip">已退出登录，重启应用以便再次登录</string>
+    <string name="settings_eh_account_sign_out_tip">已退出登录，稍后可重新登录</string>
     <string name="settings_eh_account_identity_cookies">身份 Cookie 可用于登录该账号。\n注意数据安全\n\n%s</string>
     <string name="settings_eh_account_igneous_expire">igneous 自动刷新：</string>
     <string name="settings_eh_account_identity_cookies_copy">复制</string>
@@ -416,8 +417,6 @@
     <string name="settings_eh_list_tile_thumb_size">详情模式下缩略图大小</string>
     <string name="settings_eh_thumb_size">缩略图模式下缩略图大小</string>
     <string name="settings_eh_thumb_show_title">缩略图模式下显示画廊标题</string>
-    <string name="settings_eh_force_eh_thumb">强制使用 E-Hentai 缩略图服务器</string>
-    <string name="settings_eh_force_eh_thumb_summary">若 ExHentai 加载失败可尝试此项</string>
     <string name="settings_eh_show_jpn_title">显示日文标题</string>
     <string name="settings_eh_show_jpn_title_summary">需同时在 E-Hentai 网站设置中启用 Japanese Title</string>
     <string name="settings_eh_show_gallery_pages">显示画廊页数</string>
@@ -470,6 +469,7 @@
     <string name="settings_read_show_page_interval">显示页面间隔</string>
     <string name="settings_read_turn_page_interval">自动翻页间隔（秒）</string>
     <string name="settings_read_volume_page">使用音量键翻页</string>
+    <string name="settings_read_volume_page_interval">音量键翻页间隔</string>
     <string name="settings_read_reverse_volume">翻转音量键</string>
     <string name="settings_read_reading_fullscreen">全屏</string>
     <string name="settings_read_custom_screen_lightness">自定义屏幕亮度</string>
@@ -511,6 +511,9 @@
     <string name="settings_privacy_pattern_protection_set">已设置图案保护</string>
     <string name="settings_privacy_secure">不允许屏幕抓取</string>
     <string name="settings_privacy_secure_summary">启用后，将不能截取该应用的屏幕截图。同时，也不会在系统任务切换器中显示该应用的内容预览。请重新启动应用以使此更改生效</string>
+    <string name="settings_privacy_clear_search_history">清除设备上的搜索记录</string>
+    <string name="settings_privacy_clear_search_history_summary">移除您在此设备上执行过的搜索查询的记录</string>
+    <string name="settings_privacy_clear_search_history_cleared">已清除搜索记录</string>
     <string name="settings_advanced">高级</string>
     <string name="settings_advanced_save_parse_error_body">解析失败时保存页面内容</string>
     <string name="settings_advanced_save_parse_error_body_summary">页面内容可能含有隐私敏感信息</string>
@@ -607,6 +610,7 @@
     <string name="no_browser_installed">请安装一个浏览器。</string>
     <string name="cloudflare_bypass_failed">未能绕过 Cloudflare 验证</string>
     <string name="open_in_webview">在 WebView 中打开链接以通过验证？</string>
+    <string name="information_webview_outdated">请更新 WebView 应用提高兼容性</string>
 
     <!-- Readable Time -->
     <string name="from_the_future">来自未来</string>

@@ -57,12 +57,10 @@ open class LoadImageView @JvmOverloads constructor(
                 setOnClickListener(if (canRetry) this else null)
                 isClickable = canRetry
             }
-
             RETRY_TYPE_LONG_CLICK -> {
                 setOnLongClickListener(if (canRetry) this else null)
                 isLongClickable = canRetry
             }
-
             RETRY_TYPE_NONE -> {}
         }
     }
@@ -94,7 +92,7 @@ open class LoadImageView @JvmOverloads constructor(
         load(url) {
             // https://coil-kt.github.io/coil/recipes/#shared-element-transitions
             allowHardware(hardware)
-            data(url)
+            placeholderMemoryCacheKey(key)
             memoryCacheKey(key)
             diskCacheKey(key)
             size(Size.ORIGINAL)

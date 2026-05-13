@@ -26,8 +26,11 @@ import com.hippo.ehviewer.client.EhUrl
 import com.hippo.ehviewer.client.data.BaseGalleryInfo
 import com.hippo.ehviewer.client.parser.GalleryDetailUrlParser
 import com.hippo.ehviewer.download.DownloadManager
-import com.hippo.ehviewer.spider.SpiderQueen
-import com.hippo.ehviewer.spider.readCompatFromUniFile
+import com.hippo.ehviewer.spider.SpiderDen.Companion.getGalleryDownloadDir
+import com.hippo.ehviewer.spider.SpiderInfo
+import com.hippo.ehviewer.spider.SpiderQueen.Companion.SPIDER_INFO_FILENAME
+import com.hippo.ehviewer.spider.readFromUniFile
+import com.hippo.ehviewer.spider.saveToUniFile
 import com.hippo.unifile.UniFile
 import com.hippo.unifile.openInputStream
 import com.hippo.util.launchUI
@@ -43,6 +46,7 @@ class RestoreDownloadPreference(
     attrs: AttributeSet? = null,
 ) : TaskPreference(context, attrs) {
     private var restoreDirCount = 0
+    private val nonSpiderInfoItemList = mutableListOf<Long>()
 
     @SuppressLint("ParcelCreator")
     private class RestoreItem(val dirname: String, gid: Long, token: String) : BaseGalleryInfo(gid, token)
@@ -50,13 +54,15 @@ class RestoreDownloadPreference(
     private fun getRestoreItem(dir: UniFile): RestoreItem? {
         if (!dir.isDirectory) return null
         return runCatching {
-            val result = dir.findFile(SpiderQueen.SPIDER_INFO_FILENAME)?.let {
-                readCompatFromUniFile(it)?.run {
+            val result = dir.findFile(SPIDER_INFO_FILENAME)?.let {
+                readFromUniFile(it)?.run {
                     GalleryDetailUrlParser.Result(gid, token!!)
                 }
             } ?: dir.findFile(COMIC_INFO_FILE)?.let { file ->
                 file.openInputStream().source().buffer().use {
                     GalleryDetailUrlParser.parse(it.readUtf8())
+                }.also {
+                    it?.apply { nonSpiderInfoItemList.add(gid) }
                 }
             } ?: return null
             val gid = result.gid
@@ -88,7 +94,7 @@ class RestoreDownloadPreference(
         }.getOrNull()
     }
 
-    override val jobTitle = GetText.getString(R.string.settings_download_restore_download_items)
+    override val jobTitle = JOB_TITLE_RESTORE_DOWNLOAD
 
     override fun launchJob() {
         if (singletonJob?.isActive == true) {
@@ -108,19 +114,23 @@ class RestoreDownloadPreference(
                             showTip(RESTORE_COUNT_MSG(restoreDirCount))
                         } else {
                             var count = 0
-                            var i = 0
-                            val n = result.size
-                            while (i < n) {
-                                val item = result[i]
-                                // Avoid failed gallery info
+                            result.forEach { item ->
                                 if (null != item.title) {
+                                    val gid = item.gid
                                     // Put to download
                                     DownloadManager.addDownload(item, null)
                                     // Put download dir to DB
-                                    DownloadManager.putDownloadDirname(item.gid, item.dirname)
+                                    DownloadManager.putDownloadDirname(gid, item.dirname)
+                                    // Create missing .ehviewer file
+                                    if (gid in nonSpiderInfoItemList) {
+                                        getGalleryDownloadDir(gid)?.run {
+                                            createFile(SPIDER_INFO_FILENAME)?.also {
+                                                SpiderInfo(gid, item.token, item.pages).saveToUniFile(it)
+                                            }
+                                        }
+                                    }
                                     count++
                                 }
-                                i++
                             }
                             showTip(RESTORE_COUNT_MSG(count + restoreDirCount))
                         }
@@ -132,6 +142,7 @@ class RestoreDownloadPreference(
     }
 
     companion object {
+        private val JOB_TITLE_RESTORE_DOWNLOAD = GetText.getString(R.string.settings_download_restore_download_items)
         private val RESTORE_NOT_FOUND = GetText.getString(R.string.settings_download_restore_not_found)
         private val RESTORE_FAILED = GetText.getString(R.string.settings_download_restore_failed)
         private val RESTORE_COUNT_MSG =

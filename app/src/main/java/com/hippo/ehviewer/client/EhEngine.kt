@@ -52,6 +52,8 @@ import com.hippo.ehviewer.client.parser.UserConfigParser
 import com.hippo.ehviewer.client.parser.VoteCommentParser
 import com.hippo.ehviewer.client.parser.VoteTagParser
 import com.hippo.network.StatusCodeException
+import java.io.File
+import kotlin.math.ceil
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -68,8 +70,6 @@ import okhttp3.coroutines.executeAsync
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
-import java.io.File
-import kotlin.math.ceil
 
 private val okHttpClient = EhApplication.okHttpClient
 private val MEDIA_TYPE_JSON: MediaType = "application/json; charset=utf-8".toMediaType()
@@ -369,11 +369,9 @@ object EhEngine {
             -1 -> {
                 "favdel"
             }
-
             in 0..9 -> {
                 dstCat.toString()
             }
-
             else -> {
                 throw EhException("Invalid dstCat: $dstCat")
             }
@@ -417,11 +415,9 @@ object EhEngine {
             -1 -> {
                 "delete"
             }
-
             in 0..9 -> {
                 "fav$dstCat"
             }
-
             else -> {
                 throw EhException("Invalid dstCat: $dstCat")
             }
@@ -719,31 +715,15 @@ object EhEngine {
             .executeAndParsingWith(GalleryPageApiParser::parse)
     }
 
-    private suspend fun getGallerySha1(
+    suspend fun getPTokenFromMultiPageViewer(
         gid: Long,
         token: String?,
+        sha1: Boolean = false,
     ): List<String> {
-        val url = EhUrl.getGalleryMultiPageViewerUrl(gid, token!!, true)
+        val url = EhUrl.getGalleryMultiPageViewerUrl(gid, token!!, sha1)
         val referer = EhUrl.getGalleryDetailUrl(gid, token)
+        val parser = if (sha1) GalleryMultiPageViewerParser::parseSha1 else GalleryMultiPageViewerParser::parsePToken
         Log.d(TAG, url)
-        return EhRequestBuilder(url, referer).executeAndParsingWith(GalleryMultiPageViewerParser::parseSha1)
-    }
-
-    suspend fun getGalleryDiff(
-        to: GalleryInfo,
-        from: GalleryInfo,
-    ): List<Pair<Int, Int>>? = runCatching {
-        val toSha1 = getGallerySha1(to.gid, to.token).toMutableList()
-        val info: MutableList<Pair<Int, Int>> = ArrayList()
-        getGallerySha1(from.gid, from.token).forEachIndexed { index, value ->
-            val idx = toSha1.indexOf(value)
-            // Avoid duplicate files
-            if (idx != -1) toSha1[idx] = ""
-            if (idx != index) info.add(Pair(index, idx))
-        }
-        info
-    }.getOrElse {
-        it.printStackTrace()
-        null
+        return EhRequestBuilder(url, referer).executeAndParsingWith(parser)
     }
 }

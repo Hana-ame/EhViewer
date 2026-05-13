@@ -23,7 +23,6 @@ import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Looper
-import android.text.Html
 import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.TextUtils
@@ -52,6 +51,7 @@ import androidx.core.text.inSpans
 import androidx.core.text.set
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -75,12 +75,12 @@ import com.hippo.ehviewer.client.data.ListUrlBuilder
 import com.hippo.ehviewer.client.parser.VoteCommentParser
 import com.hippo.ehviewer.dao.Filter
 import com.hippo.ehviewer.ui.MainActivity
-import com.hippo.text.URLImageGetter
 import com.hippo.util.ExceptionUtils
 import com.hippo.util.ReadableTime
 import com.hippo.util.TextUrl
 import com.hippo.util.addTextToClipboard
 import com.hippo.util.getParcelableCompat
+import com.hippo.util.loadHtml
 import com.hippo.util.toBBCode
 import com.hippo.view.ViewTransition
 import com.hippo.widget.FabLayout
@@ -93,8 +93,8 @@ import com.hippo.yorozuya.SimpleAnimatorListener
 import com.hippo.yorozuya.StringUtils
 import com.hippo.yorozuya.ViewUtils
 import com.hippo.yorozuya.collect.IntList
-import rikka.core.res.resolveColor
 import kotlin.math.hypot
+import rikka.core.res.resolveColor
 
 class GalleryCommentsScene :
     ToolbarScene(),
@@ -222,13 +222,9 @@ class GalleryCommentsScene :
                     val end = mEditText!!.selectionEnd
                     when (item.itemId) {
                         R.id.action_bold -> text[start, end] = StyleSpan(Typeface.BOLD)
-
                         R.id.action_italic -> text[start, end] = StyleSpan(Typeface.ITALIC)
-
                         R.id.action_underline -> text[start, end] = UnderlineSpan()
-
                         R.id.action_strikethrough -> text[start, end] = StrikethroughSpan()
-
                         R.id.action_url -> {
                             val oldSpans = text.getSpans<URLSpan>(start, end)
                             var oldUrl = "https://"
@@ -261,11 +257,9 @@ class GalleryCommentsScene :
                                 },
                             )
                         }
-
                         R.id.action_clear -> {
                             text.clearSpan(start, end, false)
                         }
-
                         else -> return false
                     }
                     mode?.finish()
@@ -693,7 +687,7 @@ class GalleryCommentsScene :
         if (mInAnimation) {
             return
         }
-        if (null != mEditPanel && mEditPanel!!.visibility == View.VISIBLE) {
+        if (null != mEditPanel && mEditPanel!!.isVisible) {
             hideEditPanel()
         } else {
             finish()
@@ -885,12 +879,7 @@ class GalleryCommentsScene :
             textView: ObservedTextView,
             comment: GalleryComment,
         ): CharSequence {
-            sp = Html.fromHtml(
-                comment.comment,
-                Html.FROM_HTML_MODE_LEGACY,
-                URLImageGetter(textView),
-                null,
-            )
+            sp = loadHtml(comment.comment, textView)
             val ssb = SpannableStringBuilder(sp)
             if (0L != comment.id && 0 != comment.score) {
                 val score = comment.score

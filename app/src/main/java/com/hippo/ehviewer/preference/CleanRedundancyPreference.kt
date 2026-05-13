@@ -20,12 +20,12 @@ import android.util.AttributeSet
 import com.hippo.ehviewer.GetText
 import com.hippo.ehviewer.R
 import com.hippo.ehviewer.Settings
+import com.hippo.ehviewer.download.DownloadManager as downloadManager
 import com.hippo.unifile.UniFile
 import com.hippo.util.launchUI
 import com.hippo.util.withUIContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import com.hippo.ehviewer.download.DownloadManager as downloadManager
 
 class CleanRedundancyPreference(
     context: Context,
@@ -47,7 +47,7 @@ class CleanRedundancyPreference(
 
     private fun doRealWork(): Int = Settings.downloadLocation?.listFiles()?.sumOf { clearFile(it).compareTo(false) } ?: 0
 
-    override val jobTitle = GetText.getString(R.string.settings_download_clean_redundancy)
+    override val jobTitle = JOB_TITLE_CLEAR_REDUNDANCY
 
     override fun launchJob() {
         if (singletonJob?.isActive == true) {
@@ -68,8 +68,8 @@ class CleanRedundancyPreference(
     }
 
     companion object {
-        private val NO_REDUNDANCY =
-            GetText.getString(R.string.settings_download_clean_redundancy_no_redundancy)
+        private val JOB_TITLE_CLEAR_REDUNDANCY = GetText.getString(R.string.settings_download_clean_redundancy)
+        private val NO_REDUNDANCY = GetText.getString(R.string.settings_download_clean_redundancy_no_redundancy)
         private val CLEAR_REDUNDANCY_DONE =
             { cnt: Int -> GetText.getString(R.string.settings_download_clean_redundancy_done, cnt) }
         private val FINAL_CLEAR_REDUNDANCY_MSG =

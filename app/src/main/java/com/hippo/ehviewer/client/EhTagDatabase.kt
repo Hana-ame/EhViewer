@@ -25,6 +25,9 @@ import com.hippo.unifile.UniFile
 import com.hippo.unifile.sha1
 import com.hippo.yorozuya.FileUtils
 import com.hippo.yorozuya.copyToFile
+import java.io.File
+import java.io.IOException
+import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
@@ -36,9 +39,6 @@ import okio.buffer
 import okio.source
 import org.json.JSONException
 import org.json.JSONObject
-import java.io.File
-import java.io.IOException
-import java.nio.charset.StandardCharsets
 
 private typealias TagGroup = Map<String, String>
 private typealias TagGroups = Map<String, TagGroup>
@@ -94,7 +94,6 @@ object EhTagDatabase {
                     }
                 }
             }
-
             TYPE_START -> {
                 if (translate) {
                     tags.forEach { (tag, hint) ->
@@ -113,7 +112,6 @@ object EhTagDatabase {
                     }
                 }
             }
-
             TYPE_CONTAIN -> {
                 if (translate) {
                     tags.forEach { (tag, hint) ->
@@ -171,11 +169,12 @@ object EhTagDatabase {
 
     private val NAMESPACE_TO_PREFIX = HashMap<String, String>().also {
         it["artist"] = "a"
-        it["cosplayer"] = "cos"
         it["character"] = "c"
+        it["cosplayer"] = "cos"
         it["female"] = "f"
         it["group"] = "g"
         it["language"] = "l"
+        it["location"] = "loc"
         it["male"] = "m"
         it["mixed"] = "x"
         it["other"] = "o"

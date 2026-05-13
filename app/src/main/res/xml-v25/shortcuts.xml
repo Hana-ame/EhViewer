@@ -28,7 +28,7 @@
         <intent
             android:action="start_all"
             android:targetClass="com.hippo.ehviewer.shortcuts.ShortcutsActivity"
-            android:targetPackage="org.moedog.ehviewer" />
+            android:targetPackage="xyz.moonchan.ehviewer" />
         <categories android:name="android.shortcut.conversation" />
     </shortcut>
 
@@ -42,7 +42,7 @@
         <intent
             android:action="stop_all"
             android:targetClass="com.hippo.ehviewer.shortcuts.ShortcutsActivity"
-            android:targetPackage="org.moedog.ehviewer" />
+            android:targetPackage="xyz.moonchan.ehviewer" />
         <categories android:name="android.shortcut.conversation" />
     </shortcut>
 

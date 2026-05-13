@@ -20,28 +20,27 @@ import android.util.Log
 import androidx.annotation.IntDef
 import androidx.collection.LongSparseArray
 import androidx.collection.set
+import com.hippo.ehviewer.EhApplication.Companion.okHttpClient as plainTextOkHttpClient
 import com.hippo.ehviewer.GetText
 import com.hippo.ehviewer.R
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhEngine
 import com.hippo.ehviewer.client.EhRequestBuilder
 import com.hippo.ehviewer.client.EhUrl
-import com.hippo.ehviewer.client.EhUrl.getGalleryDetailUrl
-import com.hippo.ehviewer.client.EhUrl.getGalleryMultiPageViewerUrl
-import com.hippo.ehviewer.client.EhUrl.referer
 import com.hippo.ehviewer.client.EhUtils.isMPVAvailable
 import com.hippo.ehviewer.client.data.GalleryInfo
 import com.hippo.ehviewer.client.exception.QuotaExceededException
-import com.hippo.ehviewer.client.parser.GalleryDetailParser.parsePages
-import com.hippo.ehviewer.client.parser.GalleryDetailParser.parsePreviewPages
-import com.hippo.ehviewer.client.parser.GalleryDetailParser.parsePreviewSet
-import com.hippo.ehviewer.client.parser.GalleryMultiPageViewerParser
+import com.hippo.ehviewer.client.parser.GalleryDetailParser
 import com.hippo.ehviewer.client.parser.GalleryPageUrlParser
 import com.hippo.image.Image
 import com.hippo.unifile.UniFile
 import com.hippo.util.ExceptionUtils
 import com.hippo.util.launchIO
 import com.hippo.util.runSuspendCatching
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,11 +57,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeout
 import okhttp3.coroutines.executeAsync
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.TimeSource
-import com.hippo.ehviewer.EhApplication.Companion.okHttpClient as plainTextOkHttpClient
 
 class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineScope {
     override val coroutineContext = Dispatchers.IO + Job()
@@ -77,6 +71,8 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
     private val mFinishedPages = AtomicInteger(0)
     private val mSpiderListeners: MutableList<OnSpiderListener> = ArrayList()
 
+    private var mOldDownloadDir: UniFile? = null
+    private var mOldHashMap: MutableMap<String, Int>? = null
     private var mReadReference = 0
     private var mDownloadReference = 0
 
@@ -150,6 +146,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
                 )
             }
         }
+        mSpiderInfo.upgradeFrom = null
     }
 
     fun notifyGetImageSuccess(index: Int, image: Image) {
@@ -205,6 +202,17 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         downloadMode = intoDownloadMode
     }
 
+    private fun resetStates() {
+        synchronized(mPageStateLock) {
+            if (this::mPageStateArray.isInitialized) {
+                mPageStateArray.fill(STATE_NONE)
+            }
+            mDownloadedPages.set(0)
+            mFinishedPages.set(0)
+        }
+        mWorkerScope.clearRAList()
+    }
+
     private fun setMode(@Mode mode: Int) {
         when (mode) {
             MODE_READ -> mReadReference++
@@ -227,7 +235,30 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         mSpiderDen.downloadDir = SpiderDen.getGalleryDownloadDir(galleryInfo.gid)?.takeIf { it.isDirectory }
         mSpiderInfo = readSpiderInfoFromLocal() ?: readSpiderInfoFromInternet() ?: return
         mPageStateArray = IntArray(mSpiderInfo.pages)
+        prepareUpgrade()
         notifyGetPages(mSpiderInfo.pages)
+    }
+
+    private suspend fun prepareUpgrade() {
+        mOldDownloadDir = mSpiderInfo.upgradeFrom?.let { gid ->
+            SpiderDen.getGalleryDownloadDir(gid)?.takeIf { it.isDirectory }
+        }
+        mOldDownloadDir?.findFile(SPIDER_INFO_FILENAME)?.let { oldSpiderInfoFile ->
+            val oldSpiderInfo = readFromUniFile(oldSpiderInfoFile)
+            if (oldSpiderInfo != null && oldSpiderInfo.gid == mSpiderInfo.upgradeFrom) {
+                if (oldSpiderInfo.pTokenMap.size != oldSpiderInfo.pages) {
+                    getPTokenFromMultiPageViewer(
+                        oldSpiderInfo.gid,
+                        oldSpiderInfo.token!!,
+                        oldSpiderInfo,
+                    )
+                    if (oldSpiderInfo.pTokenMap.size == oldSpiderInfo.pages) {
+                        oldSpiderInfo.saveToUniFile(oldSpiderInfoFile)
+                    }
+                }
+                mOldHashMap = oldSpiderInfo.pTokenMap.entries.associateBy({ it.value }, { it.key }).toMutableMap()
+            }
+        }
     }
 
     suspend fun awaitReady(): Boolean {
@@ -344,45 +375,26 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
 
     private fun readSpiderInfoFromLocal(): SpiderInfo? = mSpiderDen.downloadDir?.run {
         findFile(SPIDER_INFO_FILENAME)?.let { file ->
-            readCompatFromUniFile(file)?.takeIf {
+            readFromUniFile(file)?.takeIf {
                 it.gid == galleryInfo.gid && it.token == galleryInfo.token
             }
         }
     }
         ?: readFromCache(galleryInfo.gid)?.takeIf { it.gid == galleryInfo.gid && it.token == galleryInfo.token }
 
-    private fun readPreviews(body: String, index: Int, spiderInfo: SpiderInfo) {
-        spiderInfo.previewPages = parsePreviewPages(body)
-        val previewSet = parsePreviewSet(body)
-        if (previewSet.size() > 0) {
-            if (index == 0) {
-                spiderInfo.previewPerPage = previewSet.size()
-            } else {
-                spiderInfo.previewPerPage = previewSet.getPosition(0) / index
-            }
-        }
-        for (i in 0 until previewSet.size()) {
-            val result = GalleryPageUrlParser.parse(previewSet.getPageUrlAt(i))
-            if (result != null) {
-                spiderInfo.pTokenMap[result.page] = result.pToken
-            }
-        }
-    }
-
     private suspend fun readSpiderInfoFromInternet(): SpiderInfo? {
-        val request = EhRequestBuilder(
-            getGalleryDetailUrl(
-                galleryInfo.gid,
-                galleryInfo.token,
-                0,
-                false,
-            ),
-            referer,
-        ).build()
+        val url = EhUrl.getGalleryDetailUrl(
+            galleryInfo.gid,
+            galleryInfo.token,
+            0,
+            false,
+            GET_FULL_HASH,
+        )
+        val request = EhRequestBuilder(url, EhUrl.referer).build()
         return runSuspendCatching {
             plainTextOkHttpClient.newCall(request).executeAsync().use { response ->
                 val body = response.body.string()
-                val pages = parsePages(body)
+                val pages = GalleryDetailParser.parsePages(body)
                 val spiderInfo = SpiderInfo(galleryInfo.gid, galleryInfo.token, pages)
                 readPreviews(body, 0, spiderInfo)
                 spiderInfo
@@ -392,45 +404,41 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         }.getOrNull()
     }
 
-    private suspend fun getPTokenFromMultiPageViewer(index: Int): String? {
-        if (!isMPVAvailable) return null
-        val url = getGalleryMultiPageViewerUrl(
-            galleryInfo.gid,
-            galleryInfo.token!!,
-        )
-        val request = EhRequestBuilder(url, referer).build()
-        return runSuspendCatching {
-            plainTextOkHttpClient.newCall(request).executeAsync().use { response ->
-                val body = response.body.string()
-                GalleryMultiPageViewerParser.parsePToken(body).forEachIndexed { index, s ->
-                    mSpiderInfo.pTokenMap[index] = s
-                }
-                mSpiderInfo.pTokenMap[index]
+    private suspend fun getPTokenFromMultiPageViewer(gid: Long, token: String, spiderInfo: SpiderInfo) {
+        if (!isMPVAvailable) return
+        runSuspendCatching {
+            EhEngine.getPTokenFromMultiPageViewer(
+                gid,
+                token,
+                GET_FULL_HASH,
+            ).forEachIndexed { index, pToken ->
+                spiderInfo.pTokenMap[index] = pToken
             }
-        }.getOrElse {
+        }.onFailure {
             it.printStackTrace()
-            null
         }
+    }
+
+    private suspend fun getPTokenFromMultiPageViewer(index: Int): String? {
+        getPTokenFromMultiPageViewer(galleryInfo.gid, galleryInfo.token!!, mSpiderInfo)
+        return mSpiderInfo.pTokenMap[index]
     }
 
     private suspend fun getPTokenFromInternet(index: Int): String? {
         // Check previewIndex
-        var previewIndex: Int
-        previewIndex = if (mSpiderInfo.previewPerPage >= 0) {
-            index / mSpiderInfo.previewPerPage
+        val previewIndex = if (mSpiderInfo.previewPerPage >= 0) {
+            (index / mSpiderInfo.previewPerPage).coerceAtMost(mSpiderInfo.previewPages.takeIf { it > 0 }?.minus(1) ?: Int.MAX_VALUE)
         } else {
             0
         }
-        if (mSpiderInfo.previewPages > 0) {
-            previewIndex = previewIndex.coerceAtMost(mSpiderInfo.previewPages - 1)
-        }
-        val url = getGalleryDetailUrl(
+        val url = EhUrl.getGalleryDetailUrl(
             galleryInfo.gid,
             galleryInfo.token,
             previewIndex,
             false,
+            GET_FULL_HASH,
         )
-        val request = EhRequestBuilder(url, referer).build()
+        val request = EhRequestBuilder(url, EhUrl.referer).build()
         return runSuspendCatching {
             plainTextOkHttpClient.newCall(request).executeAsync().use { response ->
                 val body = response.body.string()
@@ -455,7 +463,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
     @Synchronized
     private fun writeSpiderInfoToLocal() {
         if (!isReady) return
-        mSpiderDen.downloadDir?.run { createFile(SPIDER_INFO_FILENAME)?.also { mSpiderInfo.write(it) } }
+        mSpiderDen.downloadDir?.run { createFile(SPIDER_INFO_FILENAME)?.also { mSpiderInfo.saveToUniFile(it) } }
         mSpiderInfo.saveToCache()
     }
 
@@ -543,6 +551,15 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             }
         }
 
+        fun clearRAList() {
+            synchronized(mFetcherJobMap) {
+                mFetcherJobMap.forEach { (_, job) ->
+                    job.cancel()
+                }
+                mFetcherJobMap.clear()
+            }
+        }
+
         private fun doLaunchDownloadJob(index: Int, force: Boolean) {
             val state = mPageStateArray[index]
             if (!force && state == STATE_FINISHED) return
@@ -587,6 +604,14 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
                 }
                 pToken = getPToken(index) ?: return updatePageState(index, STATE_FAILED, PTOKEN_FAILED_MESSAGE)
                 previousPToken = getPToken(index - 1)
+
+                mOldDownloadDir?.let { oldDir ->
+                    (mOldHashMap?.get(pToken) ?: mOldHashMap?.get(pToken.take(10)))?.let { oldIndex ->
+                        if (mSpiderDen.copyFromUniFileToDownloadDir(oldDir, oldIndex, index)) {
+                            return updatePageState(index, STATE_FINISHED)
+                        }
+                    }
+                }
 
                 // The lock for delay should be acquired before anything else to maintain FIFO order
                 delay(mDownloadDelay - lastRequestTime.elapsedNow())
@@ -759,6 +784,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         const val STATE_FINISHED = 2
         const val STATE_FAILED = 3
         const val SPIDER_INFO_FILENAME = ".ehviewer"
+        const val GET_FULL_HASH = true
         private val sQueenMap = LongSparseArray<SpiderQueen>()
         private val PTOKEN_FAILED_MESSAGE = GetText.getString(R.string.error_get_ptoken_error)
         private val ERROR_TIMEOUT = GetText.getString(R.string.error_timeout)
@@ -766,6 +792,10 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         private val URL_509_PATTERN = Regex("\\.org/.+/509s?\\.gif")
         private const val FORCE_RETRY = "Force retry"
         private const val WORKER_DEBUG_TAG = "SpiderQueenWorker"
+
+        fun reset(gid: Long) {
+            sQueenMap[gid]?.resetStates()
+        }
 
         private fun check509(url: String) {
             if (URL_509_PATTERN in url) throw QuotaExceededException()
@@ -787,6 +817,27 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
                     sQueenMap.remove(galleryInfo.gid)
                 } else {
                     launchIO { if (awaitReady()) updateMode() }
+                }
+            }
+        }
+
+        fun readPreviews(body: String, index: Int, spiderInfo: SpiderInfo) {
+            spiderInfo.previewPages = GalleryDetailParser.parsePreviewPages(body)
+            val previewSet = GalleryDetailParser.parsePreviewSet(body)
+            if (previewSet.size() > 0) {
+                if (index == 0) {
+                    spiderInfo.previewPerPage = previewSet.size()
+                } else {
+                    spiderInfo.previewPerPage = previewSet.getPosition(0) / index
+                }
+            }
+            for (i in 0 until previewSet.size()) {
+                if (GET_FULL_HASH) {
+                    spiderInfo.pTokenMap[previewSet.getPosition(i)] = previewSet.getSha1At(i)
+                } else {
+                    GalleryPageUrlParser.parse(previewSet.getPageUrlAt(i))?.let {
+                        spiderInfo.pTokenMap[it.page] = it.pToken
+                    }
                 }
             }
         }

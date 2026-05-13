@@ -22,8 +22,10 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Animatable
+import androidx.core.graphics.createBitmap
 import coil3.BitmapImage
 import coil3.DrawableImage
+import coil3.Image as CoilImage
 import coil3.asImage
 import coil3.imageLoader
 import coil3.request.CachePolicy
@@ -42,7 +44,6 @@ import com.hippo.ehviewer.jni.rewriteGifSource
 import com.hippo.unifile.UniFile
 import com.hippo.util.isAtLeastU
 import java.nio.ByteBuffer
-import coil3.Image as CoilImage
 
 class Image private constructor(
     private val image: CoilImage,
@@ -81,7 +82,7 @@ class Image private constructor(
 
     private fun prepareBitmap() {
         if (mBitmap != null) return
-        mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        mBitmap = createBitmap(width, height)
         mCanvas = Canvas(mBitmap!!)
     }
 
@@ -158,7 +159,6 @@ class Image private constructor(
                         }
                         decodeCoil(src.source.uri)
                     }
-
                     is ByteBufferSource -> {
                         if (!isAtLeastU) {
                             rewriteGifSource(src.source)

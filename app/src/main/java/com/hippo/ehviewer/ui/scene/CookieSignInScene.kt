@@ -17,7 +17,6 @@ package com.hippo.ehviewer.ui.scene
 
 import android.graphics.Paint
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -34,15 +33,16 @@ import com.hippo.ehviewer.client.EhCookieStore
 import com.hippo.ehviewer.client.EhEngine
 import com.hippo.ehviewer.client.EhUrl
 import com.hippo.ehviewer.client.EhUtils
+import com.hippo.ehviewer.client.exception.CloudflareBypassException
 import com.hippo.util.ExceptionUtils
 import com.hippo.util.getClipboardManager
 import com.hippo.util.getTextFromClipboard
 import com.hippo.util.launchIO
 import com.hippo.util.withUIContext
 import com.hippo.yorozuya.ViewUtils
+import java.util.Locale
 import kotlinx.coroutines.Job
 import okhttp3.Cookie
-import java.util.Locale
 
 class CookieSignInScene :
     SolidScene(),
@@ -93,12 +93,11 @@ class CookieSignInScene :
     }
 
     private fun showProgress() {
-        if (null != mProgress && View.VISIBLE != mProgress!!.visibility) {
-            mProgress!!.run {
-                alpha = 0.0f
-                visibility = View.VISIBLE
-                animate().alpha(1.0f).setDuration(500).start()
-            }
+        if (mProgress?.visibility == View.VISIBLE) return
+        mProgress?.apply {
+            alpha = 0f
+            visibility = View.VISIBLE
+            animate().alpha(1f).setDuration(500).start()
         }
     }
 
@@ -121,61 +120,81 @@ class CookieSignInScene :
     }
 
     fun enter() {
-        if (mSignInJob?.isActive == true ||
-            null == mIpbMemberIdLayout ||
-            null == mIpbPassHashLayout ||
-            null == mIpbMemberId ||
-            null == mIpbPassHash
-        ) {
-            return
-        }
-        val ipbMemberId = mIpbMemberId!!.text.toString().trim { it <= ' ' }
-        val ipbPassHash = mIpbPassHash!!.text.toString().trim { it <= ' ' }
-        if (TextUtils.isEmpty(ipbMemberId)) {
-            mIpbMemberIdLayout!!.error = getString(R.string.text_is_empty)
+        if (mSignInJob?.isActive == true) return
+        val memberIdField = mIpbMemberId ?: return
+        val passHashField = mIpbPassHash ?: return
+        val memberIdLayout = mIpbMemberIdLayout ?: return
+        val passHashLayout = mIpbPassHashLayout ?: return
+        val memberId = memberIdField.text.toString().trim()
+        val passHash = passHashField.text.toString().trim()
+
+        if (memberId.isEmpty()) {
+            memberIdLayout.error = getString(R.string.text_is_empty)
             return
         } else {
-            mIpbMemberIdLayout!!.error = null
+            memberIdLayout.error = null
         }
-        if (TextUtils.isEmpty(ipbPassHash)) {
-            mIpbPassHashLayout!!.error = getString(R.string.text_is_empty)
+        if (passHash.isEmpty()) {
+            passHashLayout.error = getString(R.string.text_is_empty)
             return
         } else {
-            mIpbPassHashLayout!!.error = null
+            passHashLayout.error = null
         }
         hideSoftInput()
         showProgress()
+
         mSignInJob = viewLifecycleOwner.lifecycleScope.launchIO {
             EhUtils.signOut()
-            runCatching {
-                storeCookie(ipbMemberId, ipbPassHash)
-                EhEngine.getProfile().run {
-                    Settings.putDisplayName(displayName)
-                    Settings.putAvatar(avatar)
+            val result = runCatching {
+                storeCookie(memberId, passHash)
+                EhEngine.getProfile().also {
+                    Settings.putDisplayName(it.displayName)
+                    Settings.putAvatar(it.avatar)
                 }
-            }.onFailure {
-                withUIContext {
-                    hideProgress()
+            }
+            withUIContext {
+                hideProgress()
+                result.onSuccess {
+                    ok()
+                }.onFailure {
                     showResultErrorDialog(it)
-                }
-            }.onSuccess {
-                withUIContext {
-                    setResult(RESULT_OK, null)
-                    finish()
                 }
             }
         }
     }
 
+    private fun ok() {
+        setResult(RESULT_OK, null)
+        finish()
+    }
+
     private fun showResultErrorDialog(e: Throwable) {
+        val isCloudflareError = e.cause is CloudflareBypassException
+        val message = buildString {
+            append(ExceptionUtils.getReadableString(e))
+            append("\n\n")
+            append(getString(R.string.sign_in_failed_tip))
+            if (isCloudflareError) {
+                append("\n\n")
+                append(getString(R.string.sign_in_failed_tip_2))
+            }
+        }
+
         AlertDialog.Builder(requireContext())
             .setTitle(R.string.sign_in_failed)
-            .setMessage("${ExceptionUtils.getReadableString(e)}\n\n${getString(R.string.wrong_cookie_warning)}")
+            .setMessage(message)
             .setPositiveButton(R.string.get_it, null)
+            .apply {
+                if (isCloudflareError) {
+                    setNegativeButton(R.string.ignore) { _, _ -> ok() }
+                }
+            }
             .show()
     }
 
     private suspend fun storeCookie(id: String, hash: String) {
+        fun newCookie(name: String, value: String, domain: String): Cookie = Cookie.Builder().name(name).value(value)
+            .domain(domain).expiresAt(Long.MAX_VALUE).build()
         EhCookieStore.addCookie(newCookie(EhCookieStore.KEY_IPB_MEMBER_ID, id, EhUrl.DOMAIN_E))
         EhCookieStore.addCookie(newCookie(EhCookieStore.KEY_IPB_MEMBER_ID, id, EhUrl.DOMAIN_EX))
         EhCookieStore.addCookie(newCookie(EhCookieStore.KEY_IPB_PASS_HASH, hash, EhUrl.DOMAIN_E))
@@ -184,54 +203,50 @@ class CookieSignInScene :
 
     private fun fillCookiesFromClipboard() {
         val context = requireContext()
+        fun showClipboardError() = showTip(R.string.from_clipboard_error, LENGTH_SHORT)
         hideSoftInput()
-        val text = context.getClipboardManager().getTextFromClipboard(context)
-        if (text == null) {
-            showTip(R.string.from_clipboard_error, LENGTH_SHORT)
+
+        val clipboardText = context.getClipboardManager().getTextFromClipboard(context)
+        if (clipboardText.isNullOrBlank()) {
+            showClipboardError()
             return
         }
-        try {
-            val kvs: Array<String> = if (text.contains(";")) {
-                text.split(";".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            } else if (text.contains("\n")) {
-                text.split("\n".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            } else {
-                showTip(R.string.from_clipboard_error, LENGTH_SHORT)
+        val kvs = when {
+            clipboardText.contains(";") -> clipboardText.split(";")
+            clipboardText.contains("\n") -> clipboardText.split("\n")
+            else -> {
+                showClipboardError()
                 return
             }
-            if (kvs.size >= 2 &&
-                text.contains(EhCookieStore.KEY_IPB_MEMBER_ID) &&
-                text.contains(EhCookieStore.KEY_IPB_PASS_HASH)
-            ) {
-                for (s in kvs) {
-                    val kv: Array<String> = if (s.contains("=")) {
-                        s.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    } else if (s.contains(":")) {
-                        s.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    } else {
-                        continue
-                    }
-                    if (kv.size != 2) {
-                        continue
-                    }
-                    when (kv[0].trim().lowercase(Locale.getDefault())) {
-                        EhCookieStore.KEY_IPB_MEMBER_ID -> mIpbMemberId?.setText(kv[1].trim())
-                        EhCookieStore.KEY_IPB_PASS_HASH -> mIpbPassHash?.setText(kv[1].trim())
-                    }
+        }.map { it.trim() }.filter { it.isNotEmpty() }
+        val hasRequiredKeys = clipboardText.contains(EhCookieStore.KEY_IPB_MEMBER_ID) &&
+            clipboardText.contains(EhCookieStore.KEY_IPB_PASS_HASH)
+        if (!hasRequiredKeys || kvs.size < 2) {
+            showClipboardError()
+            return
+        }
+
+        try {
+            kvs.forEach { entry ->
+                val kv = when {
+                    entry.contains("=") -> entry.split("=")
+                    entry.contains(":") -> entry.split(":")
+                    else -> return@forEach
                 }
-                enter()
-            } else {
-                showTip(R.string.from_clipboard_error, LENGTH_SHORT)
+                if (kv.size != 2) return@forEach
+
+                val key = kv[0].trim().lowercase(Locale.getDefault())
+                val value = kv[1].trim().replace(Regex("[^a-zA-Z0-9\\-_.~]"), "")
+                when (key) {
+                    EhCookieStore.KEY_IPB_MEMBER_ID -> mIpbMemberId?.setText(value)
+                    EhCookieStore.KEY_IPB_PASS_HASH -> mIpbPassHash?.setText(value)
+                }
             }
+            enter()
         } catch (e: Exception) {
             ExceptionUtils.throwIfFatal(e)
             e.printStackTrace()
-            showTip(R.string.from_clipboard_error, LENGTH_SHORT)
+            showClipboardError()
         }
-    }
-
-    companion object {
-        private fun newCookie(name: String, value: String, domain: String): Cookie = Cookie.Builder().name(name).value(value)
-            .domain(domain).expiresAt(Long.MAX_VALUE).build()
     }
 }

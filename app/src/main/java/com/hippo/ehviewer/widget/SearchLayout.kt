@@ -241,14 +241,13 @@ class SearchLayout @JvmOverloads constructor(
                         throw EhException(getString(R.string.search_sp_err1))
                     } else if (pageFrom != -1 && pageTo != -1 && pageTo - pageFrom < 20) {
                         throw EhException(getString(R.string.search_sp_err2))
-                    } else if (pageFrom != -1 && pageTo != -1 && pageFrom.toFloat() / pageTo > 0.8) {
+                    } else if (pageFrom != -1 && pageTo != -1 && pageFrom.toFloat() / pageTo > 0.5) {
                         throw EhException(getString(R.string.search_sp_err3))
                     }
                     urlBuilder.pageFrom = pageFrom
                     urlBuilder.pageTo = pageTo
                 }
             }
-
             SEARCH_MODE_IMAGE -> {
                 urlBuilder.mode = ListUrlBuilder.MODE_IMAGE_SEARCH
                 mImageView!!.formatListUrlBuilder(urlBuilder)
@@ -332,13 +331,11 @@ class SearchLayout @JvmOverloads constructor(
                         ViewUtils.removeFromParent(mNormalView)
                         content.addView(mNormalView)
                     }
-
                     ITEM_TYPE_NORMAL_ADVANCE -> {
                         title.setText(R.string.search_advance)
                         ViewUtils.removeFromParent(mAdvanceView)
                         content.addView(mAdvanceView)
                     }
-
                     ITEM_TYPE_IMAGE -> {
                         title.setText(R.string.search_image)
                         ViewUtils.removeFromParent(mImageView)

@@ -3,19 +3,28 @@ pluginManagement {
         gradlePluginPortal()
         google()
         mavenCentral()
-        maven("https://storage.googleapis.com/r8-releases/raw")
     }
 }
 
+@Suppress("UnstableApiUsage")
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
-        maven("https://jcenter.bintray.com")
-        maven("https://jitpack.io")
-        maven("https://oss.sonatype.org/content/repositories/snapshots/")
     }
+}
+
+plugins {
+    id("com.android.settings") version "8.13.2"
+}
+
+android {
+    compileSdk = 36
+    minSdk = 23
+    targetSdk = 36
+    ndkVersion = "29.0.14206865"
+    buildToolsVersion = "36.0.0"
 }
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

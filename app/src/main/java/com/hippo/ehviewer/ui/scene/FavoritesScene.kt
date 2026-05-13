@@ -31,6 +31,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.Toolbar
+import androidx.core.util.size
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
@@ -75,7 +76,7 @@ import com.hippo.yorozuya.LayoutUtils
 import com.hippo.yorozuya.ObjectUtils
 import com.hippo.yorozuya.SimpleHandler
 import com.hippo.yorozuya.ViewUtils
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -275,11 +276,9 @@ class FavoritesScene :
             in 0..9 -> {
                 mFavCatArray!![favCat]
             }
-
             FavListUrlBuilder.FAV_CAT_LOCAL -> {
                 getString(R.string.local_favorites)
             }
-
             else -> {
                 getString(R.string.cloud_favorites)
             }
@@ -627,7 +626,7 @@ class FavoritesScene :
         }
         mModifyGiList.clear()
         mRecyclerView!!.checkedItemPositions?.let {
-            for (i in 0 until it.size()) {
+            for (i in 0 until it.size) {
                 if (it.valueAt(i)) {
                     mHelper!!.getDataAtEx(it.keyAt(i))?.let { gi ->
                         mModifyGiList.add(gi)
@@ -891,13 +890,11 @@ class FavoritesScene :
                     holder.value.text = mFavLocalCount.toString()
                     holder.itemView.isEnabled = true
                 }
-
                 1 -> {
                     holder.key.setText(R.string.cloud_favorites)
                     holder.value.text = mFavCountSum.toString()
                     holder.itemView.isEnabled = true
                 }
-
                 else -> {
                     if (null == mFavCatArray || null == mFavCountArray || mFavCatArray!!.size < position - 1 || mFavCountArray!!.size < position - 1) {
                         return

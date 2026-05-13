@@ -41,6 +41,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.getSystemService
+import androidx.core.net.toUri
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
@@ -244,6 +245,7 @@ class MainActivity :
             }
             updateProfile()
             mNavView!!.setNavigationItemSelectedListener(this)
+            mAvatar!!.setOnClickListener { updateProfile() }
         }
         if (savedInstanceState == null) {
             checkDownloadLocation()
@@ -286,13 +288,13 @@ class MainActivity :
                     try {
                         val intent = Intent(
                             android.provider.Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS,
-                            Uri.parse("package:$packageName"),
+                            "package:$packageName".toUri(),
                         )
                         startActivity(intent)
                     } catch (_: Throwable) {
                         val intent = Intent(
                             android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                            Uri.parse("package:$packageName"),
+                            "package:$packageName".toUri(),
                         )
                         startActivity(intent)
                     }
@@ -572,7 +574,6 @@ class MainActivity :
                         .setArgs(args),
                 )
             }
-
             R.id.nav_subscription -> {
                 val args = Bundle()
                 args.putString(GalleryListScene.KEY_ACTION, GalleryListScene.ACTION_SUBSCRIPTION)
@@ -581,7 +582,6 @@ class MainActivity :
                         .setArgs(args),
                 )
             }
-
             R.id.nav_whats_hot -> {
                 val args = Bundle()
                 args.putString(GalleryListScene.KEY_ACTION, GalleryListScene.ACTION_WHATS_HOT)
@@ -590,7 +590,6 @@ class MainActivity :
                         .setArgs(args),
                 )
             }
-
             R.id.nav_toplist -> {
                 val args = Bundle()
                 args.putString(GalleryListScene.KEY_ACTION, GalleryListScene.ACTION_TOP_LIST)
@@ -599,19 +598,15 @@ class MainActivity :
                         .setArgs(args),
                 )
             }
-
             R.id.nav_favourite -> {
                 startScene(Announcer(FavoritesScene::class.java))
             }
-
             R.id.nav_history -> {
                 startScene(Announcer(HistoryScene::class.java))
             }
-
             R.id.nav_downloads -> {
                 startScene(Announcer(DownloadsScene::class.java))
             }
-
             R.id.nav_settings -> {
                 val intent = Intent(this, SettingsActivity::class.java)
                 settingsLauncher.launch(intent)

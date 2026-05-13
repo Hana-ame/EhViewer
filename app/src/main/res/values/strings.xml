@@ -32,13 +32,14 @@
     <string name="error_username_cannot_empty">Username cannot be an empty string</string>
     <string name="error_password_cannot_empty">Password cannot be an empty string</string>
     <string name="sign_in_failed">Sign in failed</string>
-    <string name="sign_in_failed_tip">If this issue continues, try \"Sign in via WebView\" or \"Sign in via cookies\".</string>
+    <string name="sign_in_failed_tip">If this issue continues, try \"Sign in via WebView\".</string>
+    <string name="sign_in_failed_tip_2">If you are sure your cookies are correct, you can choose to ignore the error and continue, but this may cause some issues.</string>
+    <string name="ignore">Ignore</string>
     <string name="get_it">Got it</string>
     <!-- Cookie Sign In Scene -->
     <string name="cookie_explain">A cookie is a small piece of data stored in web browser. Google it if you don\'t know what it is or how to get it.\n\nPlease enter special cookies to sign in.</string>
     <string name="from_clipboard">From clipboard</string>
     <string name="text_is_empty">Text is empty</string>
-    <string name="wrong_cookie_warning">It seems that the cookies you entered are wrong. You\'d better check them.</string>
     <string name="from_clipboard_error">No cookies found in clipboard.</string>
 
     <!-- Select Site Scene -->
@@ -171,7 +172,7 @@
     <string name="search_sp_err0">The page range minimum cannot be above 1000</string>
     <string name="search_sp_err1">The page range maximum cannot be below 10</string>
     <string name="search_sp_err2">The page range must be at least 20</string>
-    <string name="search_sp_err3">The page range ratio cannot be above 0.8</string>
+    <string name="search_sp_err3">The page range ratio cannot be above 0.5</string>
     <string name="search_sf">Disable default filters for:</string>
     <string name="search_sfl">Language</string>
     <string name="search_sfu">Uploader</string>
@@ -413,7 +414,7 @@
     <string name="settings_eh_account_name_tourist">Not signed in.</string>
     <string name="settings_eh_account_refresh_igneous">Refresh igneous</string>
     <string name="settings_eh_account_sign_out">Sign out</string>
-    <string name="settings_eh_account_sign_out_tip">You have signed out. Restart the application to sign in again</string>
+    <string name="settings_eh_account_sign_out_tip">Signed out. You can sign in again shortly</string>
     <string name="settings_eh_account_identity_cookies">Identity cookies can be used to sign in to this account.\nKEEP IT SAFE\n\n%s</string>
     <string name="settings_eh_account_igneous_expire">"igneous auto refresh: "</string>
     <string name="settings_eh_account_identity_cookies_copy">Copy</string>
@@ -442,8 +443,6 @@
     <string name="settings_eh_list_tile_thumb_size">Thumb size in detail mode</string>
     <string name="settings_eh_thumb_size">Thumb size in thumb mode</string>
     <string name="settings_eh_thumb_show_title">Show title in thumb mode</string>
-    <string name="settings_eh_force_eh_thumb">Force E-Hentai thumb server</string>
-    <string name="settings_eh_force_eh_thumb_summary">Try this if you have trouble loading from ExHentai</string>
     <string name="settings_eh_show_jpn_title">Show Japanese title</string>
     <string name="settings_eh_show_jpn_title_summary">Require enabling Japanese Title in Settings on E-Hentai website</string>
     <string name="settings_eh_show_gallery_pages">Show gallery pages</string>
@@ -494,8 +493,9 @@
     <string name="settings_read_show_progress">Show progress</string>
     <string name="settings_read_show_battery">Show battery</string>
     <string name="settings_read_show_page_interval">Show page interval</string>
-    <string name="settings_read_turn_page_interval">Trun page interval (in seconds)</string>
+    <string name="settings_read_turn_page_interval">Turn page interval (in seconds)</string>
     <string name="settings_read_volume_page">Use volume key to turn pages</string>
+    <string name="settings_read_volume_page_interval">Volume key turn page interval</string>
     <string name="settings_read_reverse_volume">Reverse volume key</string>
     <string name="settings_read_reading_fullscreen">Fullscreen</string>
     <string name="settings_read_custom_screen_lightness">Custom screen lightness</string>
@@ -536,7 +536,10 @@
     <string name="settings_privacy_pattern_protection_not_set">Pattern protection has not been set</string>
     <string name="settings_privacy_pattern_protection_set">Pattern protection has been set</string>
     <string name="settings_privacy_secure">Prevent screenshots</string>
-    <string name="settings_privacy_secure_summary">Prevent the content of the app from being taken screenshots of or shown in the \"Recent Apps\" list.</string>
+    <string name="settings_privacy_secure_summary">Prevent the content of the app from being taken screenshots of or shown in the \"Recent Apps\" list</string>
+    <string name="settings_privacy_clear_search_history">Clear device search history</string>
+    <string name="settings_privacy_clear_search_history_summary">Remove searches you have performed from this device</string>
+    <string name="settings_privacy_clear_search_history_cleared">Search history cleared</string>
     <string name="settings_advanced">Advanced</string>
     <string name="settings_advanced_save_parse_error_body">Save HTML content when parsing error</string>
     <string name="settings_advanced_save_parse_error_body_summary">Html content may be privacy-sensitive</string>
@@ -669,6 +672,7 @@
     <string name="no_browser_installed">Just install a browser please.</string>
     <string name="cloudflare_bypass_failed">Failed to bypass Cloudflare challenge</string>
     <string name="open_in_webview">Open URL in WebView to finish the challenge?</string>
+    <string name="information_webview_outdated">Please update the WebView app for better compatibility</string>
 
     <!-- Readable Time -->
     <string name="from_the_future">From the future</string>

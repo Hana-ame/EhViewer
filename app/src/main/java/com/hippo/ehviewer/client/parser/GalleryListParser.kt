@@ -25,10 +25,10 @@ import com.hippo.ehviewer.client.exception.ParseException
 import com.hippo.util.ExceptionUtils
 import com.hippo.util.JsoupUtils
 import com.hippo.yorozuya.NumberUtils
+import java.util.regex.Pattern
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.regex.Pattern
 
 object GalleryListParser {
     private val TAG = GalleryListParser::class.java.simpleName
@@ -286,7 +286,7 @@ object GalleryListParser {
             result.noWatchedTags = body.contains("<p>You do not have any watched tags")
             if (body.contains("No hits found</p>")) {
                 val warn = d.getElementsByClass("searchwarn").text()
-                if (warn.isNullOrEmpty()) {
+                if (warn.isEmpty()) {
                     return result
                 } else {
                     throw EhException(warn)

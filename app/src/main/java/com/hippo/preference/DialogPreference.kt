@@ -32,6 +32,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.content.withStyledAttributes
 import androidx.preference.Preference
 import com.hippo.ehviewer.R
 
@@ -67,108 +68,88 @@ abstract class DialogPreference(
     private var mWhichButtonClicked = 0
 
     init {
-        val a = context.obtainStyledAttributes(attrs, R.styleable.DialogPreference, 0, 0)
-        mDialogTitle = a.getString(R.styleable.DialogPreference_dialogTitle)
-        if (mDialogTitle == null) {
-            // Fallback on the regular title of the preference
-            // (the one that is seen in the list)
-            mDialogTitle = title
+        context.withStyledAttributes(attrs, R.styleable.DialogPreference, 0, 0) {
+            mDialogTitle = getString(R.styleable.DialogPreference_dialogTitle)
+            if (mDialogTitle == null) {
+                // Fallback on the regular title of the preference
+                // (the one that is seen in the list)
+                mDialogTitle = title
+            }
+            mDialogIcon = getDrawable(R.styleable.DialogPreference_dialogIcon)
+            mPositiveButtonText = getString(R.styleable.DialogPreference_positiveButtonText)
+            mNegativeButtonText = getString(R.styleable.DialogPreference_negativeButtonText)
+            mDialogLayoutResId =
+                getResourceId(R.styleable.DialogPreference_dialogLayout, mDialogLayoutResId)
         }
-        mDialogIcon = a.getDrawable(R.styleable.DialogPreference_dialogIcon)
-        mPositiveButtonText = a.getString(R.styleable.DialogPreference_positiveButtonText)
-        mNegativeButtonText = a.getString(R.styleable.DialogPreference_negativeButtonText)
-        mDialogLayoutResId =
-            a.getResourceId(R.styleable.DialogPreference_dialogLayout, mDialogLayoutResId)
-        a.recycle()
     }
 
+    /**
+     * Returns the title to be shown on subsequent dialogs.
+     * @return The title.
+     *
+     * Sets the title of the dialog. This will be shown on subsequent dialogs.
+     * @param dialogTitle The title.
+     */
     var dialogTitle: CharSequence?
-        /**
-         * Returns the title to be shown on subsequent dialogs.
-         *
-         * @return The title.
-         */
         get() = mDialogTitle
-
-        /**
-         * Sets the title of the dialog. This will be shown on subsequent dialogs.
-         *
-         * @param dialogTitle The title.
-         */
         set(dialogTitle) {
             mDialogTitle = dialogTitle
         }
 
+    /**
+     * Returns the icon to be shown on subsequent dialogs.
+     * @return The icon, as a [Drawable].
+     *
+     * Sets the icon of the dialog. This will be shown on subsequent dialogs.
+     * @param dialogIcon The icon, as a [Drawable].
+     */
     var dialogIcon: Drawable?
-        /**
-         * Returns the icon to be shown on subsequent dialogs.
-         *
-         * @return The icon, as a [Drawable].
-         */
         get() = mDialogIcon
-
-        /**
-         * Sets the icon of the dialog. This will be shown on subsequent dialogs.
-         *
-         * @param dialogIcon The icon, as a [Drawable].
-         */
         set(dialogIcon) {
             mDialogIcon = dialogIcon
         }
 
+    /**
+     * Returns the text of the negative button to be shown on subsequent
+     * dialogs.
+     * @return The text of the positive button.
+     *
+     * Sets the text of the negative button of the dialog. This will be shown on
+     * subsequent dialogs.
+     * @param positiveButtonText The text of the negative button.
+     */
     var positiveButtonText: CharSequence?
-        /**
-         * Returns the text of the negative button to be shown on subsequent
-         * dialogs.
-         *
-         * @return The text of the positive button.
-         */
         get() = mPositiveButtonText
-
-        /**
-         * Sets the text of the negative button of the dialog. This will be shown on
-         * subsequent dialogs.
-         *
-         * @param positiveButtonText The text of the negative button.
-         */
         set(positiveButtonText) {
             mPositiveButtonText = positiveButtonText
         }
 
+    /**
+     * Returns the text of the negative button to be shown on subsequent
+     * dialogs.
+     * @return The text of the negative button.
+     *
+     * Sets the text of the negative button of the dialog. This will be shown on
+     * subsequent dialogs.
+     * @param negativeButtonText The text of the negative button.
+     */
     var negativeButtonText: CharSequence?
-        /**
-         * Returns the text of the negative button to be shown on subsequent
-         * dialogs.
-         *
-         * @return The text of the negative button.
-         */
         get() = mNegativeButtonText
-
-        /**
-         * Sets the text of the negative button of the dialog. This will be shown on
-         * subsequent dialogs.
-         *
-         * @param negativeButtonText The text of the negative button.
-         */
         set(negativeButtonText) {
             mNegativeButtonText = negativeButtonText
         }
 
+    /**
+     * Returns the layout resource that is used as the content View for
+     * subsequent dialogs.
+     * @return The layout resource.
+     *
+     * Sets the layout resource that is inflated as the [View] to be shown
+     * as the content View of subsequent dialogs.
+     * @param dialogLayoutResource The layout resource ID to be inflated.
+     */
     var dialogLayoutResource: Int
-        /**
-         * Returns the layout resource that is used as the content View for
-         * subsequent dialogs.
-         *
-         * @return The layout resource.
-         */
         get() = mDialogLayoutResId
-
-        /**
-         * Sets the layout resource that is inflated as the [View] to be shown
-         * as the content View of subsequent dialogs.
-         *
-         * @param dialogLayoutResource The layout resource ID to be inflated.
-         */
         set(dialogLayoutResource) {
             mDialogLayoutResId = dialogLayoutResource
         }
@@ -317,12 +298,12 @@ abstract class DialogPreference(
      */
     protected open fun onDialogClosed(positiveResult: Boolean) {}
 
+    /**
+     * Gets the dialog that is shown by this preference.
+     *
+     * @return The dialog, or null if a dialog is not being shown.
+     */
     val dialog: Dialog?
-        /**
-         * Gets the dialog that is shown by this preference.
-         *
-         * @return The dialog, or null if a dialog is not being shown.
-         */
         get() = mDialog
 
     override fun onSaveInstanceState(): Parcelable? {

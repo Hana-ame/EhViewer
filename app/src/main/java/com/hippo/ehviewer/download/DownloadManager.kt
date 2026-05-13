@@ -19,6 +19,7 @@ import android.util.Log
 import android.util.SparseLongArray
 import androidx.collection.LongSparseArray
 import androidx.collection.keyIterator
+import androidx.core.util.size
 import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.client.data.GalleryInfo
 import com.hippo.ehviewer.dao.DownloadInfo
@@ -26,17 +27,17 @@ import com.hippo.ehviewer.dao.DownloadLabel
 import com.hippo.ehviewer.spider.SpiderDen
 import com.hippo.ehviewer.spider.SpiderQueen
 import com.hippo.ehviewer.spider.SpiderQueen.OnSpiderListener
-import com.hippo.ehviewer.spider.readCompatFromUniFile
-import com.hippo.ehviewer.spider.write
+import com.hippo.ehviewer.spider.readFromUniFile
+import com.hippo.ehviewer.spider.saveToUniFile
 import com.hippo.image.Image
 import com.hippo.yorozuya.ConcurrentPool
 import com.hippo.yorozuya.MathUtils
 import com.hippo.yorozuya.ObjectUtils
 import com.hippo.yorozuya.SimpleHandler
 import com.hippo.yorozuya.collect.LongList
+import java.util.LinkedList
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import java.util.LinkedList
 
 object DownloadManager : OnSpiderListener {
     // All download info list
@@ -596,9 +597,9 @@ object DownloadManager : OnSpiderListener {
     private fun resetReadingProgress(gid: Long) {
         val downloadDir = SpiderDen.getGalleryDownloadDir(gid) ?: return
         val file = downloadDir.findFile(SpiderQueen.SPIDER_INFO_FILENAME) ?: return
-        val spiderInfo = readCompatFromUniFile(file) ?: return
+        val spiderInfo = readFromUniFile(file) ?: return
         spiderInfo.startPage = 0
-        spiderInfo.write(file)
+        spiderInfo.saveToUniFile(file)
     }
 
     // Update in DB
@@ -1034,20 +1035,17 @@ object DownloadManager : OnSpiderListener {
                         }
                     }
                 }
-
                 TYPE_ON_GET_509 -> {
                     if (mDownloadListener != null) {
                         mDownloadListener!!.onGet509()
                     }
                 }
-
                 TYPE_ON_PAGE_DOWNLOAD -> mSpeedReminder.onDownload(
                     mIndex,
                     mContentLength,
                     mReceivedSize,
                     mBytesRead,
                 )
-
                 TYPE_ON_PAGE_SUCCESS -> {
                     mSpeedReminder.onDone(mIndex)
                     val info = mCurrentTask
@@ -1068,7 +1066,6 @@ object DownloadManager : OnSpiderListener {
                         }
                     }
                 }
-
                 TYPE_ON_PAGE_FAILURE -> {
                     mSpeedReminder.onDone(mIndex)
                     val info = mCurrentTask
@@ -1086,7 +1083,6 @@ object DownloadManager : OnSpiderListener {
                         }
                     }
                 }
-
                 TYPE_ON_FINISH -> {
                     mSpeedReminder.onFinish()
                     // Download done
@@ -1196,7 +1192,7 @@ object DownloadManager : OnSpiderListener {
                     var downloadingCount = 0
                     var downloadingContentLengthSum: Long = 0
                     var totalSize: Long = 0
-                    for (i in 0 until maxOf(mContentLengthMap.size(), mReceivedSizeMap.size())) {
+                    for (i in 0 until maxOf(mContentLengthMap.size, mReceivedSizeMap.size)) {
                         val contentLength = mContentLengthMap.valueAt(i)
                         val receivedSize = mReceivedSizeMap.valueAt(i)
                         downloadingCount++

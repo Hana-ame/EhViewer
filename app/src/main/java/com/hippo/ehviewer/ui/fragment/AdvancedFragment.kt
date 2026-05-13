@@ -24,6 +24,7 @@ import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.lifecycleScope
@@ -33,6 +34,7 @@ import com.hippo.ehviewer.BuildConfig
 import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.GetText
 import com.hippo.ehviewer.R
+import com.hippo.ehviewer.Settings as AppSettings
 import com.hippo.ehviewer.client.EhClient
 import com.hippo.ehviewer.client.EhRequest
 import com.hippo.ehviewer.client.data.FavListUrlBuilder
@@ -45,9 +47,6 @@ import com.hippo.util.isAtLeastS
 import com.hippo.util.launchIO
 import com.hippo.util.withUIContext
 import com.hippo.yorozuya.IOUtils
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
@@ -56,12 +55,14 @@ import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.math.ceil
-import com.hippo.ehviewer.Settings as AppSettings
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 @Suppress("BlockingMethodInNonBlockingContext")
 class AdvancedFragment : BasePreferenceFragment() {
     private var exportLauncher = registerForActivityResult<String, Uri>(
-        ActivityResultContracts.CreateDocument("application/vnd.sqlite3"),
+        ActivityResultContracts.CreateDocument("application/octet-stream"),
     ) { uri: Uri? ->
         if (uri != null) {
             try {
@@ -294,13 +295,13 @@ class AdvancedFragment : BasePreferenceFragment() {
                 @SuppressLint("InlinedApi")
                 val intent = Intent(
                     Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS,
-                    Uri.parse("package:" + requireContext().packageName),
+                    "package:${requireContext().packageName}".toUri(),
                 )
                 startActivity(intent)
             } catch (_: Throwable) {
                 val intent = Intent(
                     Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.parse("package:" + requireContext().packageName),
+                    "package:${requireContext().packageName}".toUri(),
                 )
                 startActivity(intent)
             }
@@ -393,7 +394,6 @@ class AdvancedFragment : BasePreferenceFragment() {
             } else {
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(newValue as String))
             }
-            requireActivity().recreate()
             return true
         }
         return false
