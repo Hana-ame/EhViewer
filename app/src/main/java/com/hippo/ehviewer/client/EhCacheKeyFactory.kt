@@ -42,7 +42,7 @@ val String.thumbUrl: String
             if (host == "s.exhentai.org") {
                 host = "ehgt.org"
             }
-            return "${THUMB_PROXY}${path}?proxy_host=${host}"
+            return "${THUMB_PROXY}$path?proxy_host=$host"
         }
         return THUMB_PROXY + url.trimStart('/')
     }
