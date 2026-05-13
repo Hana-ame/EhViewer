@@ -20,6 +20,8 @@
 
     <!-- Login Scene -->
     <string name="app_waring">The content of this application is from the Internet. Some of it may do physical or mental harm to you. You have learnt the risks above and would like to undertake them.\nBy continuing to use it, you agree to the above terms.</string>
+    <string name="modified_notice">This version is modified by Nanaka for mirror sites. Please download the original version if you need to sign in.</string>
+    <string name="anonymous_link">Visit anonymous version: https://810114.xyz</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="sign_in">Sign in</string>

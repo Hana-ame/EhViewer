@@ -21,17 +21,17 @@ import com.hippo.network.UrlBuilder
 object EhUrl {
     const val SITE_E = 0
     const val SITE_EX = 1
-    const val DOMAIN_E = "e-hentai.org"
-    const val DOMAIN_EX = "exhentai.org"
+    const val DOMAIN_E = "e.810114.xyz"
+    const val DOMAIN_EX = "e.810114.xyz"
     const val DOMAIN_LOFI = "lofi.e-hentai.org"
     const val HOST_E = "https://$DOMAIN_E/"
     const val HOST_EX = "https://$DOMAIN_EX/"
-    private const val API_E = "https://api.e-hentai.org/api.php"
-    private const val API_EX = "https://s.exhentai.org/api.php"
+    private const val API_E = "https://e.810114.xyz/api.php"
+    private const val API_EX = "https://e.810114.xyz/api.php"
     private const val URL_FAVORITES_E = HOST_E + "favorites.php"
     private const val URL_FAVORITES_EX = HOST_EX + "favorites.php"
-    private const val URL_IMAGE_SEARCH_E = "https://upload.e-hentai.org/image_lookup.php"
-    private const val URL_IMAGE_SEARCH_EX = "https://exhentai.org/upload/image_lookup.php"
+    private const val URL_IMAGE_SEARCH_E = "https://e.810114.xyz/upload/image_lookup.php"
+    private const val URL_IMAGE_SEARCH_EX = "https://e.810114.xyz/upload/image_lookup.php"
     private const val URL_MY_TAGS_E = HOST_E + "mytags"
     private const val URL_MY_TAGS_EX = HOST_EX + "mytags"
     private const val URL_POPULAR_E = HOST_E + "popular"

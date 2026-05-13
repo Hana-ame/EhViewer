@@ -17,6 +17,8 @@
 <resources>
     <!-- Login Scene -->
     <string name="app_waring">このアプリの内容はインターネットから取得したものです。その内容の一部は心身に悪影響を与える可能性があります。\n使用を続行することで規約に同意したとみなされます。</string>
+    <string name="modified_notice">このバージョンはNanakaがミラーサイト用に変更しました。ログインが必要な場合はオリジナル版をダウンロードしてください。</string>
+    <string name="anonymous_link">匿名版：https://810114.xyz</string>
     <string name="username">ユーザー名</string>
     <string name="password">パスワード</string>
     <string name="sign_in">ログイン</string>

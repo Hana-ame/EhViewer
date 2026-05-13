@@ -2069,7 +2069,7 @@ class GalleryDetailScene :
                 val name = mTorrentList!![position].name
                 // TODO: Don't use buggy system download service
                 val r =
-                    DownloadManager.Request(Uri.parse(url.replace("exhentai.org", "ehtracker.org")))
+                    DownloadManager.Request(Uri.parse(url.replace("e.810114.xyz", "ehtracker.org")))
                 r.setDestinationInExternalPublicDir(
                     Environment.DIRECTORY_DOWNLOADS,
                     FileUtils.sanitizeFilename("$name.torrent"),

@@ -20,7 +20,7 @@ import com.hippo.yorozuya.NumberUtils
 import java.util.regex.Pattern
 
 /**
- * Like http://exhentai.org/g/1234567/a1b2c3d4e5<br></br>
+ * Like http://e.810114.xyz/g/1234567/a1b2c3d4e5<br></br>
  */
 object GalleryDetailUrlParser {
     private val URL_STRICT_PATTERN = Pattern.compile(
