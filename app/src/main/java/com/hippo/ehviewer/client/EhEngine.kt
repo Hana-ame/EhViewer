@@ -116,7 +116,8 @@ private fun rethrowExactly(code: Int, body: String, e: Throwable) {
             if (Settings.saveParseErrorBody) {
                 AppConfig.saveParseErrorBody(e, body)
             }
-            throw EhException(GetText.getString(R.string.error_parse_error), e)
+            val snippet = if (body.length > 1000) body.take(1000) + "..." else body
+            throw EhException("${e.message}\n\n$snippet", e)
         }
     }
 

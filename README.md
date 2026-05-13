@@ -102,6 +102,7 @@ Translators
     Copyright 2014-2019 Hippo Seven
     Copyright 2020-2022 NekoInverter
     Copyright 2022-2025 Moedog
+    Copyright 2026 Nanaka & Deepseek-V4 Pro
 
     EhViewer is free software:
     you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation,
