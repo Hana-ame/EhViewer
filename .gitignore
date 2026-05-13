@@ -9,6 +9,9 @@
 release
 google-services.json
 /.kotlin
+# Claude
+.claude/
+
 # Signing
 keystore.properties
 **/keystore/
