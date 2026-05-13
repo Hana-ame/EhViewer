@@ -21,7 +21,7 @@ import okhttp3.Request
 
 val CHROME_USER_AGENT = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/$WebViewVersion.0.0.0 Mobile Safari/537.36"
 private const val CHROME_ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
-private const val CHROME_ACCEPT_LANGUAGE = "en-US,en;q=0.9"
+private const val CHROME_ACCEPT_LANGUAGE = "zh-CN,zh;q=0.9"
 
 open class ChromeRequestBuilder(url: String) : Request.Builder() {
     init {
