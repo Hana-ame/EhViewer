@@ -36,6 +36,7 @@ android {
             isEnable = true
             reset()
             if (isRelease) {
+                include(*supportedAbis)
                 isUniversalApk = true
             } else {
                 include("x86_64", "x86")
