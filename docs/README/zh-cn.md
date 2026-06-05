@@ -65,9 +65,9 @@
 | 6.0-8.1    | 不支持动画 WebP |
 | 9.0+       | 完整支持       |
 
-- 请前往 [Github Releases](https://github.com/EhViewer-NekoInverter/EhViewer/releases) 下载发行版
+- 请前往 [Github Releases](https://github.com/Hana-ame/EhViewer/releases) 下载发行版
 
-- 如果发行版存在未修复的问题，前往 [Github Actions](https://github.com/EhViewer-NekoInverter/EhViewer/actions/workflows/ci.yml) 下载 CI 版，需要登录 Github 账号
+- 如果发行版存在未修复的问题，前往 [Github Actions](https://github.com/Hana-ame/EhViewer/actions/workflows/ci.yml) 下载 CI 版，需要登录 Github 账号
 
 # 截图
 

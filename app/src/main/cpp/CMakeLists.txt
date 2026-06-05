@@ -40,13 +40,17 @@ FetchContent_Declare(
         nettle
         URL https://ftp.gnu.org/gnu/nettle/nettle-3.10.2.tar.gz
         URL_MD5 b28bcbf6f045ff007940a9401673600d
-        SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/nettle/nettle
+        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/nettle/nettle
 )
 
 FetchContent_MakeAvailable(nettle)
+# project(nettle) in nettle/CMakeLists.txt overrides ${nettle_SOURCE_DIR},
+# so stash the populated source dir under a different name for the subdir to use.
+set(LIBNETTLE_DIR ${nettle_SOURCE_DIR})
 add_subdirectory(nettle)
 
 # Configure libnettle support for libarchive
+include_directories(${LIBNETTLE_DIR}/..)
 include_directories(nettle)
 include_directories(.)
 set(HAVE_LIBNETTLE 1)
