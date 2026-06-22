@@ -30,10 +30,8 @@ class EhGalleryProvider(private val mGalleryInfo: GalleryInfo) :
     OnSpiderListener {
     private lateinit var mSpiderQueen: SpiderQueen
     override fun start() {
-        if (!::mSpiderQueen.isInitialized) {
-            mSpiderQueen = obtainSpiderQueen(mGalleryInfo, SpiderQueen.MODE_READ)
-            mSpiderQueen.addOnSpiderListener(this)
-        }
+        mSpiderQueen = obtainSpiderQueen(mGalleryInfo, SpiderQueen.MODE_READ)
+        mSpiderQueen.addOnSpiderListener(this)
     }
 
     override fun stop() {
