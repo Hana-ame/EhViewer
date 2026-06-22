@@ -85,7 +85,7 @@ class ArchiveGalleryProvider(context: Context, private val uri: Uri, passwdFlow:
     override fun stop() {
         cancel()
         closeArchive()
-        pfd.close()
+        if (::pfd.isInitialized) pfd.close()
         Log.d(DEBUG_TAG, "Close archive $uri successfully!")
         super.stop()
     }

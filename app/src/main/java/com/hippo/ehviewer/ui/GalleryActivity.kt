@@ -55,7 +55,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
-import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -67,7 +66,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.hippo.app.EditTextDialogBuilder
@@ -80,9 +78,6 @@ import com.hippo.ehviewer.client.data.GalleryInfo
 import com.hippo.ehviewer.gallery.ArchiveGalleryProvider
 import com.hippo.ehviewer.gallery.EhGalleryProvider
 import com.hippo.ehviewer.gallery.GalleryProvider2
-import com.hippo.ehviewer.util.getValue
-import com.hippo.ehviewer.util.lazyMut
-import com.hippo.ehviewer.util.setValue
 import com.hippo.ehviewer.widget.GalleryGuideView
 import com.hippo.ehviewer.widget.GalleryHeader
 import com.hippo.ehviewer.widget.ReversibleSeekBar
@@ -123,20 +118,10 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import rikka.core.res.isNight
 import rikka.core.res.resolveColor
 
-class GalleryModel : ViewModel() {
-    var galleryProvider: GalleryProvider2? = null
-    override fun onCleared() {
-        super.onCleared()
-        galleryProvider?.stop()
-        galleryProvider = null
-    }
-}
-
 class GalleryActivity :
     EhActivity(),
     OnSeekBarChangeListener,
     GalleryView.Listener {
-    private val vm: GalleryModel by viewModels()
     private val requestStoragePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { result ->
@@ -201,7 +186,7 @@ class GalleryActivity :
     private var mCacheFileName: String? = null
     private var mGLRootView: GLRootView? = null
     private var mGalleryView: GalleryView? = null
-    private var mGalleryProvider by lazyMut { vm::galleryProvider }
+    private var mGalleryProvider: GalleryProvider2? = null
     private var mGalleryAdapter: GalleryAdapter? = null
     private var insetsController: WindowInsetsControllerCompat? = null
     private var mMaskView: ColorView? = null
@@ -239,6 +224,7 @@ class GalleryActivity :
         }
 
     private fun buildProvider(replace: Boolean = false) {
+        setOrientation()
         if (mGalleryProvider != null) {
             if (replace) mGalleryProvider!!.stop() else return
         }
@@ -307,6 +293,7 @@ class GalleryActivity :
 
     private fun onInit() {
         handleIntent(intent)
+        buildProvider()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -333,6 +320,7 @@ class GalleryActivity :
         mGalleryInfo = savedInstanceState.getParcelableCompat(KEY_GALLERY_INFO)
         mPage = savedInstanceState.getInt(KEY_PAGE, -1)
         mCurrentIndex = savedInstanceState.getInt(KEY_CURRENT_INDEX)
+        buildProvider()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -367,7 +355,6 @@ class GalleryActivity :
         } else {
             onRestore(savedInstanceState)
         }
-        buildProvider()
         builder = EditTextDialogBuilder(this, null, getString(R.string.archive_passwd))
         builder.setTitle(getString(R.string.archive_need_passwd))
         builder.setPositiveButton(getString(android.R.string.ok), null)
@@ -467,15 +454,6 @@ class GalleryActivity :
             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
 
-        // Orientation
-        requestedOrientation = when (Settings.screenRotation) {
-            0 -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            1 -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-            2 -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            3 -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
-            else -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        }
-
         // Guide
         if (Settings.guideGallery) {
             val mainLayout = ViewUtils.`$$`(this, R.id.main) as FrameLayout
@@ -525,6 +503,18 @@ class GalleryActivity :
         updateSlider()
     }
 
+    private fun setOrientation() {
+        val targetOrientation = when (Settings.screenRotation) {
+            1 -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            2 -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            3 -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
+            else -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+        if (requestedOrientation != targetOrientation) {
+            requestedOrientation = targetOrientation
+        }
+    }
+
     private fun pageTurn(isPrevious: Boolean) {
         val isRTL = mLayoutMode == GalleryView.LAYOUT_RIGHT_TO_LEFT
         if (isPrevious xor isRTL) {
@@ -569,7 +559,11 @@ class GalleryActivity :
             mGalleryAdapter!!.clearUploader()
             mGalleryAdapter = null
         }
-        mGalleryProvider?.setListener(null)
+        if (mGalleryProvider != null) {
+            mGalleryProvider!!.setListener(null)
+            mGalleryProvider!!.stop()
+            mGalleryProvider = null
+        }
         mMaskView = null
         mClock = null
         mProgress = null
