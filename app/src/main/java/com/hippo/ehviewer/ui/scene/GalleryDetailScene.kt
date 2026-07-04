@@ -2060,7 +2060,7 @@ class GalleryDetailScene :
                 mDialog = null
             }
         }
-    
+
         override fun onDismiss(dialog: DialogInterface) {
             if (mRequest != null) {
                 mRequest!!.cancel()
