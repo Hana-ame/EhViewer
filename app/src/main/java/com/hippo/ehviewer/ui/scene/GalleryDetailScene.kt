@@ -2037,8 +2037,8 @@ class GalleryDetailScene :
                 val url = mTorrentList!![position].url
                 val name = mTorrentList!![position].name
                 // TODO: Don't use buggy system download service
-                val r =
-                    DownloadManager.Request(url.replace("/torrent", "https://ehtracker.org/get").toUri()) // 26.06.23 似乎种子无法下载
+                // 修改为在前面加上 https://e.810114.xyz，替代原先的 replace 逻辑
+                val r = DownloadManager.Request(("https://e.810114.xyz" + url).toUri())
                 r.setDestinationInExternalPublicDir(
                     Environment.DIRECTORY_DOWNLOADS,
                     FileUtils.sanitizeFilename("$name.torrent"),
@@ -2060,7 +2060,7 @@ class GalleryDetailScene :
                 mDialog = null
             }
         }
-
+    
         override fun onDismiss(dialog: DialogInterface) {
             if (mRequest != null) {
                 mRequest!!.cancel()
