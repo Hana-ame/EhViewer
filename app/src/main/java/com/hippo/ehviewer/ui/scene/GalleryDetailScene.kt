@@ -32,6 +32,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -2047,6 +2048,9 @@ class GalleryDetailScene :
                 val httpUrl = normalizedUrl.toHttpUrlOrNull()
                 val torrentUrlStr = httpUrl?.newBuilder()?.host("e.810114.xyz")?.build()?.toString()
                     ?: "https://e.810114.xyz/${url.removePrefix("/")}"
+                Log.d("TorrentDownload", "原始URL: $url")
+                Log.d("TorrentDownload", "标准化后: $normalizedUrl")
+                Log.d("TorrentDownload", "最终下载URL: $torrentUrlStr")
                 val r = DownloadManager.Request(torrentUrlStr.toUri())
                 r.setDestinationInExternalPublicDir(
                     Environment.DIRECTORY_DOWNLOADS,
@@ -2064,7 +2068,7 @@ class GalleryDetailScene :
                 } catch (e: Throwable) {
                     e.printStackTrace()
                     ExceptionUtils.throwIfFatal(e)
-                    showTip(R.string.download_torrent_failure, LENGTH_SHORT)
+                    showTip("${e.message}", LENGTH_SHORT)
                 }
             }
             if (mDialog != null) {
