@@ -226,9 +226,9 @@
 
     <string-array name="tag_translation_metadata">
         <item>tag-translations-zh-rCN.json.sha1</item>
-        <item>https://raw.githubusercontent.com/Hana-ame/EhTagTranslation/tag-translations/tag-translations/tag-translations-zh-rCN.json.sha1</item>
+        <item>https://proxy.moonchan.xyz/EhViewer-NekoInverter/EhTagTranslation/tag-translations/tag-translations/tag-translations-zh-rCN.json.sha1?proxy_host=raw.githubusercontent.com</item>
         <item>tag-translations-zh-rCN.json</item>
-        <item>https://raw.githubusercontent.com/Hana-ame/EhTagTranslation/tag-translations/tag-translations/tag-translations-zh-rCN.json</item>
+        <item>https://proxy.moonchan.xyz/EhViewer-NekoInverter/EhTagTranslation/tag-translations/tag-translations/tag-translations-zh-rCN.json?proxy_host=raw.githubusercontent.com</item>
     </string-array>
 
     <string-array name="proxy_types" tools:ignore="InconsistentArrays">

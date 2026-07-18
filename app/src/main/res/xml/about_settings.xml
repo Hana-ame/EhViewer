@@ -29,18 +29,22 @@
         app:iconSpaceReserved="false" />
 
     <com.hippo.preference.UrlPreference
-        android:key="telegram"
-        android:title="@string/settings_about_telegram"
+        android:key="feedback"
+        android:title="反馈"
+        android:summary="https://810114.xyz/?bid=1"
         app:enableCopying="true"
         app:iconSpaceReserved="false"
-        app:url="https://t.me/+AOIyOaC5iaFmYWVl" />
+        app:url="https://810114.xyz/?bid=1" />
 
+    <!--
     <com.hippo.preference.UrlPreference
         android:key="issues"
         android:title="@string/settings_about_issues"
         app:enableCopying="true"
         app:iconSpaceReserved="false"
         app:url="https://github.com/Hana-ame/EhViewer/issues/18" />
+    -->
+
 
     <com.hippo.preference.UrlPreference
         android:key="latest_release"

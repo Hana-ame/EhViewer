@@ -142,6 +142,7 @@ import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.roundToInt
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.coroutines.executeAsync
 import rikka.core.res.resolveBoolean
 import rikka.core.res.resolveColor
@@ -2033,18 +2034,29 @@ class GalleryDetailScene :
 
         override fun onItemClick(parent: AdapterView<*>?, view: View, position: Int, id: Long) {
             val context = context
-            if (null != context && null != mTorrentList && position < mTorrentList!!.size) {
+            if (context != null && mTorrentList != null && position < mTorrentList!!.size) {
                 val url = mTorrentList!![position].url
                 val name = mTorrentList!![position].name
                 // TODO: Don't use buggy system download service
-                // 修改为在前面加上 https://e.810114.xyz，替代原先的 replace 逻辑
-                val r = DownloadManager.Request(("https://e.810114.xyz" + url).toUri())
+                val normalizedUrl = when {
+                    url.startsWith("http://") || url.startsWith("https://") -> url
+                    url.startsWith("//") -> "https:$url"
+                    url.startsWith("/") -> "https://e.810114.xyz$url"
+                    else -> "https://$url"
+                }
+                val httpUrl = normalizedUrl.toHttpUrlOrNull()
+                val torrentUrlStr = httpUrl?.newBuilder()?.host("e.810114.xyz")?.build()?.toString()
+                    ?: "https://e.810114.xyz/${url.removePrefix("/")}"
+                val r = DownloadManager.Request(torrentUrlStr.toUri())
                 r.setDestinationInExternalPublicDir(
                     Environment.DIRECTORY_DOWNLOADS,
                     FileUtils.sanitizeFilename("$name.torrent"),
                 )
                 r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                r.addRequestHeader("Cookie", EhCookieStore.getCookieHeader(url.toHttpUrl()))
+                val cookieUrl = httpUrl ?: torrentUrlStr.toHttpUrlOrNull()
+                cookieUrl?.let {
+                    r.addRequestHeader("Cookie", EhCookieStore.getCookieHeader(it))
+                }
                 val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
                 try {
                     dm.enqueue(r)
