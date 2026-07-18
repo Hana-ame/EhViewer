@@ -443,8 +443,9 @@ object EhEngine {
         token: String?,
     ): List<TorrentParser.Result> {
         val referer = EhUrl.getGalleryDetailUrl(gid, token)
-        Log.d(TAG, url)
-        return EhRequestBuilder(url, referer).executeAndParsingWith(TorrentParser::parse)
+        val absUrl = if (url.startsWith("/")) "${EhUrl.host.removeSuffix("/")}$url" else url
+        Log.d(TAG, absUrl)
+        return EhRequestBuilder(absUrl, referer).executeAndParsingWith(TorrentParser::parse)
     }
 
     suspend fun getArchiveList(
@@ -453,8 +454,9 @@ object EhEngine {
         token: String?,
     ): ArchiveParser.Result {
         val referer = EhUrl.getGalleryDetailUrl(gid, token)
-        Log.d(TAG, url)
-        return EhRequestBuilder(url, referer).executeAndParsingWith(ArchiveParser::parse)
+        val absUrl = if (url.startsWith("/")) "${EhUrl.host.removeSuffix("/")}$url" else url
+        Log.d(TAG, absUrl)
+        return EhRequestBuilder(absUrl, referer).executeAndParsingWith(ArchiveParser::parse)
             .apply { funds = funds ?: getFunds() }
     }
 
