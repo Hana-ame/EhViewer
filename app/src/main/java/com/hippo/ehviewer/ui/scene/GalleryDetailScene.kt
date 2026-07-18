@@ -2068,7 +2068,7 @@ class GalleryDetailScene :
                 } catch (e: Throwable) {
                     e.printStackTrace()
                     ExceptionUtils.throwIfFatal(e)
-                    showTip("${e.message}", LENGTH_SHORT)
+                    showTip("${e.javaClass.simpleName}: ${e.message} (URL: $torrentUrlStr)", LENGTH_LONG)
                 }
             }
             if (mDialog != null) {
@@ -2103,7 +2103,7 @@ class GalleryDetailScene :
                 mProgressView!!.visibility = View.GONE
                 mErrorText!!.visibility = View.VISIBLE
                 mListView!!.visibility = View.GONE
-                mErrorText!!.text = ExceptionUtils.getReadableString(e)
+                mErrorText!!.text = "${e.javaClass.simpleName}: ${e.message}"
             }
         }
 
