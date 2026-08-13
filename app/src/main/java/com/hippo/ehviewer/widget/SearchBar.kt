@@ -58,6 +58,7 @@ import com.hippo.yorozuya.MathUtils
 import com.hippo.yorozuya.SimpleAnimatorListener
 import com.hippo.yorozuya.ViewUtils
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
@@ -87,13 +88,14 @@ class SearchBar @JvmOverloads constructor(
     private var mListHeader: View
     private var mViewTransition: ViewTransition
     private var mSuggestionAdapter: SuggestionAdapter
-    private var mSuggestionList = listOf<Suggestion>()
+    private val mSuggestionList = mutableListOf<Suggestion>()
     private val suggestionLock = Mutex()
     private var mAllowEmptySearch = true
     private var mInAnimation = false
     private var mHelper: Helper? = null
     private var mSuggestionProvider: SuggestionProvider? = null
     private var mOnStateChangeListener: OnStateChangeListener? = null
+    private var updateSuggestionJob: Job? = null
 
     init {
         val inflater = LayoutInflater.from(context)
@@ -144,10 +146,13 @@ class SearchBar @JvmOverloads constructor(
     @SuppressLint("NotifyDataSetChanged")
     @OptIn(DelicateCoroutinesApi::class)
     private fun updateSuggestions(scrollToTop: Boolean = true) {
-        launchIO {
+        updateSuggestionJob?.cancel()
+        updateSuggestionJob = launchIO {
             suggestionLock.withLock {
-                mSuggestionList = mergedSuggestionFlow().toList()
+                val newList = mergedSuggestionFlow().toList()
                 withUIContext {
+                    mSuggestionList.clear()
+                    mSuggestionList.addAll(newList)
                     if (mSuggestionList.isEmpty()) {
                         removeListHeader()
                     } else {
@@ -458,7 +463,7 @@ class SearchBar @JvmOverloads constructor(
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SuggestionHolder = SuggestionHolder(mInflater.inflate(R.layout.item_simple_list_2, parent, false))
 
         override fun onBindViewHolder(holder: SuggestionHolder, position: Int) {
-            val suggestion = mSuggestionList[position]
+            val suggestion = mSuggestionList.getOrNull(position) ?: return
             val text1 = suggestion.getText(holder.text1)
             val text2 = suggestion.getText(holder.text2)
             holder.text1.text = text1
@@ -471,19 +476,14 @@ class SearchBar @JvmOverloads constructor(
             }
 
             holder.itemView.setOnClickListener {
-                mSuggestionList.run {
-                    if (position < size) {
-                        this[position].onClick()
-                    }
+                val pos = holder.bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) {
+                    mSuggestionList.getOrNull(pos)?.onClick()
                 }
             }
             holder.itemView.setOnLongClickListener {
-                mSuggestionList.run {
-                    if (position < size) {
-                        return@setOnLongClickListener this[position].onLongClick()
-                    }
-                }
-                return@setOnLongClickListener false
+                val pos = holder.bindingAdapterPosition
+                mSuggestionList.getOrNull(pos)?.onLongClick() ?: false
             }
         }
 
