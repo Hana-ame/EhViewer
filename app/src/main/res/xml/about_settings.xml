@@ -36,6 +36,14 @@
         app:iconSpaceReserved="false"
         app:url="https://810114.xyz/?bid=1" />
 
+    <com.hippo.preference.UrlPreference
+        android:key="chatto"
+        android:title="聊天"
+        android:summary="https://chatto.moonchan.xyz"
+        app:enableCopying="true"
+        app:iconSpaceReserved="false"
+        app:url="https://chatto.moonchan.xyz" />
+
     <!--
     <com.hippo.preference.UrlPreference
         android:key="issues"
